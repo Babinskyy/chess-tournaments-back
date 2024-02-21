@@ -1,12 +1,11 @@
 import { Request, Response } from 'express';
-import { io } from '../../index';
-import { clients } from '../socket/onConnection';
+import { clients, io } from '../../index';
+import { users } from '../socket/onConnection';
 
 export const ClientsController = {
-  get: async (_req: Request, res: Response) => {
+  getConnectedClients: async (_req: Request, res: Response) => {
     try {
-      const clientsWithUsername = clients.filter((client) => client.username);
-      res.json(clientsWithUsername);
+      res.status(200).json({users: users})
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Error ziom' });
@@ -22,6 +21,7 @@ export const ClientsController = {
     }
   },
   checkIsLogged: async (req: Request, res: Response) => {
+    console.log("hello")
     try {
       console.log('1', req.body);
       if (req.body.player.username) {
@@ -40,6 +40,12 @@ export const ClientsController = {
   },
   setUsername: async (req: Request, res: Response) => {
     try {
+      // const clientIndex = clients.findIndex((client) => client.id === req.body.player.id);
+
+      // if (clientIndex !== -1) {
+      //   clients[clientIndex].username = req.body.player.username;
+      // }
+
       res.status(200).json({username: req.body.player.username})
     } catch (error) {
       console.error(error);
