@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { clients, io } from '../../index';
-import { users } from '../socket/onConnection';
+import { activeUsers } from '../socket/onConnection';
 
 export const ClientsController = {
   getConnectedClients: async (_req: Request, res: Response) => {
     try {
-      res.status(200).json({users: users})
+      res.status(200).json({users: activeUsers})
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Error ziom' });
@@ -21,9 +21,7 @@ export const ClientsController = {
     }
   },
   checkIsLogged: async (req: Request, res: Response) => {
-    console.log("hello")
     try {
-      console.log('1', req.body);
       if (req.body.player.username) {
         res.status(200).json({
           message: `Player ${req.body.player.username} is logged with Id: ${req.body.player.id}`,
