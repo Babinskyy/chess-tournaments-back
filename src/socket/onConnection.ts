@@ -3,6 +3,7 @@ import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { io } from '../..';
 import { userReconnect } from './userReconnect';
 import { v4 } from 'uuid';
+import { startGame } from '../utils/startGame';
 
 export type User = {
   id: string;
@@ -11,7 +12,7 @@ export type User = {
 
 export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
-const activeGames = new Map();
+export const activeGames = new Map();
 const getUsersArray = () => Array.from(activeUsers);
 const initialFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -93,13 +94,18 @@ export const onConnection = (
       game = v4();
       socket.emit('gameId', game);
       players = [];
-      activeGames.set(game, { fen: initialFen, players: players });
+      activeGames.set(game, {
+        fen: initialFen,
+        players: players,
+        clocks: [3 * 60, 3 * 60],
+        interval: null,
+        isWhiteTurn: true,
+      });
     }
 
     if (players) {
       players.push(player);
       socket.join(game!);
-
       io.to(game!).emit('player-join', players);
     }
   });
@@ -112,4 +118,8 @@ export const onConnection = (
       console.error(`Game with ID ${game} not found.`);
     }
   });
+
+  socket.on('game-started', (gameId) => {
+    startGame(gameId, activeGames)
+  })
 };

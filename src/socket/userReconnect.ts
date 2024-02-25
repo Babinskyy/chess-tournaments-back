@@ -44,6 +44,7 @@ export const userReconnect = (
       activeGames.get(activeGameId).players
     );
     const fen = activeGames.get(activeGameId).fen;
-    io.to(activeGameId).emit('recover-game', {fen, activeGameId});
+    const clocks = activeGames.get(activeGameId).clocks;
+    io.to(activeGameId).emit('recover-game', {fen, activeGameId, clocks});
   }
 };
