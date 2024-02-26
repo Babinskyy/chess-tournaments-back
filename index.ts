@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import { router as UrlRouter } from "./src/routers/UrlRouter";
-import { router as ClientsRouter } from "./src/routers/ClientsRouter";
+// import { router as ClientsRouter } from "./src/routers/ClientsRouter";
 import http from "http";
 import { Server } from "socket.io";
 import { onConnection } from "./src/socket/onConnection";
@@ -34,7 +34,6 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.use("/url", UrlRouter);
-app.use("/clients", ClientsRouter);
 
 server.listen(port, () => {
   console.log(`Server is Fire at http://localhost:${port}`);

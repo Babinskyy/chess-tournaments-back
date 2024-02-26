@@ -26,7 +26,8 @@ export const onConnection = (
 
   socket.on('user-login', (user: User, callback: Function) => {
     const isUsernameTaken = Array.from(allUsers).some(
-      (existingUser) => existingUser.username === user.username
+      (existingUser) =>
+        existingUser.username.toLowerCase() === user.username.toLowerCase()
     );
 
     if (isUsernameTaken) {
@@ -36,6 +37,7 @@ export const onConnection = (
       allUsers.add(user);
       callback({ success: true, message: 'User added successfully' });
     }
+    console.log(activeUsers, allUsers)
   });
 
   socket.on('user-entered-lobby', () => {
@@ -45,13 +47,14 @@ export const onConnection = (
   socket.on('user-reconnect', (username) => {
     userReconnect(username, socket.id, activeGames, socket, io);
   });
-  socket.on('user-logout', (username): void => {
+  socket.on('user-logout', (username) => {
     const existingUser = Array.from(activeUsers).find(
       (user) => user.username === username
     );
 
     if (existingUser) {
       activeUsers.delete(existingUser);
+      allUsers.delete(existingUser);
     }
 
     io.emit('users-list-update', getUsersArray());
@@ -120,6 +123,6 @@ export const onConnection = (
   });
 
   socket.on('game-started', (gameId) => {
-    startGame(gameId, activeGames)
-  })
+    startGame(gameId, activeGames);
+  });
 };

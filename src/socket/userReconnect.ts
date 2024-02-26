@@ -23,7 +23,9 @@ export const userReconnect = (
     updatedUsers.add({ id: socketid, username: username });
 
     activeUsers.clear();
+    allUsers.clear();
     updatedUsers.forEach((user) => activeUsers.add(user));
+    updatedUsers.forEach((user) => allUsers.add(user));
   }
 
   const findGameByUsername = (username: string): string | undefined => {
@@ -45,6 +47,6 @@ export const userReconnect = (
     );
     const fen = activeGames.get(activeGameId).fen;
     const clocks = activeGames.get(activeGameId).clocks;
-    io.to(activeGameId).emit('recover-game', {fen, activeGameId, clocks});
+    io.to(activeGameId).emit('recover-game', { fen, activeGameId, clocks });
   }
 };
