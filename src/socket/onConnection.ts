@@ -3,24 +3,26 @@ import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { io } from '../..';
 import { userReconnect } from './userReconnect';
 import { v4 } from 'uuid';
-import { startGame } from '../utils/startGame';
+import { startGame } from './startGame';
+import { addPoints } from './addPoints';
+import { finishGame } from './finishGame';
+import { getUsersArray } from '../utils/getUsersArray';
 
 export type User = {
   id: string;
   username: string;
+  points: number;
 };
 
 export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
 export const activeGames = new Map();
-const getUsersArray = () => Array.from(activeUsers);
+export const finishedGames = new Map();
 const initialFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 export const onConnection = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
-  console.log(`Client is connected with id: ${socket.id}`);
-
   io.emit('socket-id', socket.id);
   socket.emit('user-id', socket.id);
 
@@ -33,20 +35,20 @@ export const onConnection = (
     if (isUsernameTaken) {
       callback({ success: false, message: 'Username taken' });
     } else {
-      activeUsers.add(user);
-      allUsers.add(user);
+      activeUsers.add({ id: user.id, username: user.username, points: 0 });
+      allUsers.add({ id: user.id, username: user.username, points: 0 });
       callback({ success: true, message: 'User added successfully' });
     }
-    console.log(activeUsers, allUsers)
   });
 
   socket.on('user-entered-lobby', () => {
-    io.emit('users-list-update', getUsersArray());
+    io.emit('users-list-update', getUsersArray(activeUsers));
   });
 
   socket.on('user-reconnect', (username) => {
     userReconnect(username, socket.id, activeGames, socket, io);
   });
+
   socket.on('user-logout', (username) => {
     const existingUser = Array.from(activeUsers).find(
       (user) => user.username === username
@@ -57,7 +59,7 @@ export const onConnection = (
       allUsers.delete(existingUser);
     }
 
-    io.emit('users-list-update', getUsersArray());
+    io.emit('users-list-update', getUsersArray(activeUsers));
   });
 
   socket.on('disconnect', (reason): void => {
@@ -69,7 +71,7 @@ export const onConnection = (
       activeUsers.delete(existingUser);
     }
 
-    io.emit('users-list-update', getUsersArray());
+    io.emit('users-list-update', getUsersArray(activeUsers));
   });
 
   socket.on('move', (move, game) => {
@@ -101,7 +103,6 @@ export const onConnection = (
         fen: initialFen,
         players: players,
         clocks: [3 * 60, 3 * 60],
-        interval: null,
         isWhiteTurn: true,
       });
     }
@@ -115,8 +116,8 @@ export const onConnection = (
 
   socket.on('update-game', ({ game, fen }: any) => {
     if (activeGames.has(game)) {
-      const gamesmth = activeGames.get(game);
-      gamesmth.fen = fen;
+      const activeGame = activeGames.get(game);
+      activeGame.fen = fen;
     } else {
       console.error(`Game with ID ${game} not found.`);
     }
@@ -124,5 +125,21 @@ export const onConnection = (
 
   socket.on('game-started', (gameId) => {
     startGame(gameId, activeGames);
+  });
+
+  socket.on('game-end', ({ result, reason, game }) => {
+    const finishedGame = activeGames.get(game);
+
+    if (finishedGame) {
+      const winner =
+        result === 'white'
+          ? finishedGame.players[0]
+          : result === 'black'
+          ? finishedGame.players[1]
+          : 'draw';
+      addPoints(activeUsers, winner, game, activeGames);
+      finishGame(io, game, result, reason, activeUsers);
+      activeGames.delete(game);
+    }
   });
 };

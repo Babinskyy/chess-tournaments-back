@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { activeUsers, allUsers } from './onConnection';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+import { findGameByUsername } from '../utils/findGameByUsername';
 
 export const userReconnect = (
   username: string,
@@ -20,7 +21,11 @@ export const userReconnect = (
       )
     );
     updatedUsers.delete(existingUser);
-    updatedUsers.add({ id: socketid, username: username });
+    updatedUsers.add({
+      id: socketid,
+      username: username,
+      points: existingUser.points,
+    });
 
     activeUsers.clear();
     allUsers.clear();
@@ -28,17 +33,8 @@ export const userReconnect = (
     updatedUsers.forEach((user) => allUsers.add(user));
   }
 
-  const findGameByUsername = (username: string): string | undefined => {
-    for (const [game, gameData] of activeGames) {
-      if (gameData?.players && gameData.players.includes(username)) {
-        return game;
-      }
-    }
+  const activeGameId = findGameByUsername(username, activeGames);
 
-    return undefined;
-  };
-
-  const activeGameId = findGameByUsername(username);
   if (activeGameId) {
     socket.join(activeGameId);
     io.to(activeGameId).emit(
