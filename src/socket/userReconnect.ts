@@ -25,6 +25,7 @@ export const userReconnect = (
       id: socketid,
       username: username,
       points: existingUser.points,
+      status: existingUser.status,
     });
 
     activeUsers.clear();

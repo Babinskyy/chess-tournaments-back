@@ -12,6 +12,7 @@ export type User = {
   id: string;
   username: string;
   points: number;
+  status: 'notStarted' | 'inGame' | 'waiting';
 };
 
 export const activeUsers: Set<User> = new Set();
@@ -35,8 +36,18 @@ export const onConnection = (
     if (isUsernameTaken) {
       callback({ success: false, message: 'Username taken' });
     } else {
-      activeUsers.add({ id: user.id, username: user.username, points: 0 });
-      allUsers.add({ id: user.id, username: user.username, points: 0 });
+      activeUsers.add({
+        id: user.id,
+        username: user.username,
+        points: 0,
+        status: 'notStarted',
+      });
+      allUsers.add({
+        id: user.id,
+        username: user.username,
+        points: 0,
+        status: 'notStarted',
+      });
       callback({ success: true, message: 'User added successfully' });
     }
   });
@@ -91,6 +102,7 @@ export const onConnection = (
         game = gameId;
         socket.emit('gameId', game);
         players = gameData.players;
+
         break;
       }
     }
@@ -105,23 +117,42 @@ export const onConnection = (
         clocks: [3 * 60, 3 * 60],
         isWhiteTurn: true,
       });
+      activeUsers.forEach((user) => {
+        if (user.username === player) {
+          user.status = 'waiting';
+        }
+      });
     }
 
     if (players) {
       players.push(player);
       socket.join(game!);
+      if (players.length === 2) {
+        activeUsers.forEach((user) => {
+          if (user.username === players![0]) {
+            user.status = 'inGame';
+          }
+          if (user.username === players![1]) {
+            user.status = 'inGame';
+          }
+        });
+      }
+      io.emit('users-list-update', getUsersArray(activeUsers));
       io.to(game!).emit('player-join', players);
     }
   });
 
-  socket.on('update-game', ({ game, fen }: any) => {
-    if (activeGames.has(game)) {
-      const activeGame = activeGames.get(game);
-      activeGame.fen = fen;
-    } else {
-      console.error(`Game with ID ${game} not found.`);
+  socket.on(
+    'update-game',
+    ({ game, currentPosition }: { game: string; currentPosition: string }) => {
+      if (activeGames.has(game)) {
+        const activeGame = activeGames.get(game);
+        activeGame.fen = currentPosition;
+      } else {
+        console.error(`Game with ID ${game} not found.`);
+      }
     }
-  });
+  );
 
   socket.on('game-started', (gameId) => {
     startGame(gameId, activeGames);
@@ -137,6 +168,15 @@ export const onConnection = (
           : result === 'black'
           ? finishedGame.players[1]
           : 'draw';
+
+      activeUsers.forEach((user) => {
+        if (user.username === finishedGame.players[0]) {
+          user.status = 'notStarted';
+        }
+        if (user.username === finishedGame.players[1]) {
+          user.status = 'notStarted';
+        }
+      });
       addPoints(activeUsers, winner, game, activeGames);
       finishGame(io, game, result, reason, activeUsers);
       activeGames.delete(game);

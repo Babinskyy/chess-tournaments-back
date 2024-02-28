@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import { router as UrlRouter } from "./src/routers/UrlRouter";
-// import { router as ClientsRouter } from "./src/routers/ClientsRouter";
 import http from "http";
 import { Server } from "socket.io";
 import { onConnection } from "./src/socket/onConnection";
