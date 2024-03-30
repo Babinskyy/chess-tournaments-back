@@ -10,6 +10,7 @@ import { getUsersArray } from '../utils/getUsersArray';
 import { User } from '../types/types.types';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const INITIAL_MINUTES = 3;
 
 export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
@@ -111,7 +112,7 @@ export const onConnection = (
       activeGames.set(game, {
         fen: INITIAL_FEN,
         players: players,
-        clocks: [0.5 * 60, 0.5 * 60],
+        clocks: [INITIAL_MINUTES * 60, INITIAL_MINUTES * 60],
       });
       activeUsers.forEach((user) => {
         if (user.username === player) {
@@ -140,12 +141,12 @@ export const onConnection = (
 
   socket.on(
     'update-game',
-    ({ game, currentPosition }: { game: string; currentPosition: string }) => {
-      if (activeGames.has(game)) {
-        const activeGame = activeGames.get(game);
+    ({ room, currentPosition }: { room: string; currentPosition: string }) => {
+      if (activeGames.has(room)) {
+        const activeGame = activeGames.get(room);
         activeGame.fen = currentPosition;
       } else {
-        console.error(`Game with ID ${game} not found.`);
+        console.error(`Game with ID ${room} not found.`);
       }
     }
   );
@@ -154,8 +155,8 @@ export const onConnection = (
     startGame(gameId, activeGames);
   });
 
-  socket.on('game-end', ({ result, reason, game }) => {
-    const finishedGame = activeGames.get(game);
+  socket.on('game-end', ({ result, reason, room }) => {
+    const finishedGame = activeGames.get(room);
 
     if (finishedGame) {
       const winner =
@@ -173,9 +174,9 @@ export const onConnection = (
           user.status = 'notStarted';
         }
       });
-      addPoints(activeUsers, winner, game, activeGames);
-      finishGame(game, result, reason);
-      activeGames.delete(game);
+      addPoints(activeUsers, winner, room, activeGames);
+      finishGame(room, result, reason);
+      activeGames.delete(room);
     }
   });
 };
