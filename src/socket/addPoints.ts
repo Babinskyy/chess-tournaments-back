@@ -1,4 +1,4 @@
-import { User } from './onConnection';
+import { User } from '../types/types.types';
 
 export const addPoints = (
   activeUsers: Set<User>,

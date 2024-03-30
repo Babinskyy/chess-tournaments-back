@@ -7,19 +7,14 @@ import { startGame } from './startGame';
 import { addPoints } from './addPoints';
 import { finishGame } from './finishGame';
 import { getUsersArray } from '../utils/getUsersArray';
+import { User } from '../types/types.types';
 
-export type User = {
-  id: string;
-  username: string;
-  points: number;
-  status: 'notStarted' | 'inGame' | 'waiting';
-};
+const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
 export const activeGames = new Map();
 export const finishedGames = new Map();
-const initialFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 export const onConnection = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -60,7 +55,7 @@ export const onConnection = (
     userReconnect(username, socket.id, activeGames, socket, io);
   });
 
-  socket.on('user-logout', (username) => {
+  socket.on('user-logout', ({ username, isPlayerWhite, room }): void => {
     const existingUser = Array.from(activeUsers).find(
       (user) => user.username === username
     );
@@ -69,6 +64,8 @@ export const onConnection = (
       activeUsers.delete(existingUser);
       allUsers.delete(existingUser);
     }
+
+    finishGame(room, !isPlayerWhite ? 'white' : 'black', 'opponent disconnect');
 
     io.emit('users-list-update', getUsersArray(activeUsers));
   });
@@ -112,10 +109,9 @@ export const onConnection = (
       socket.emit('gameId', game);
       players = [];
       activeGames.set(game, {
-        fen: initialFen,
+        fen: INITIAL_FEN,
         players: players,
-        clocks: [3 * 60, 3 * 60],
-        isWhiteTurn: true,
+        clocks: [0.5 * 60, 0.5 * 60],
       });
       activeUsers.forEach((user) => {
         if (user.username === player) {
@@ -178,7 +174,7 @@ export const onConnection = (
         }
       });
       addPoints(activeUsers, winner, game, activeGames);
-      finishGame(io, game, result, reason, activeUsers);
+      finishGame(game, result, reason);
       activeGames.delete(game);
     }
   });

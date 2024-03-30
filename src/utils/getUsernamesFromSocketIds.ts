@@ -1,4 +1,4 @@
-import { User } from '../socket/onConnection';
+import { User } from '../types/types.types';
 
 export const getUsernamesForActiveSockets = (
   activeUsers: Set<User>,

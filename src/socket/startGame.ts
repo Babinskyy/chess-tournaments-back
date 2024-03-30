@@ -1,18 +1,27 @@
+import { io } from '../..';
 import { getTurnColorFromFEN } from '../utils/getTurnColorFromFEN';
+import { finishGame } from './finishGame';
 
 export const startGame = (gameId: string, activeGames: Map<any, any>) => {
-  const turn = getTurnColorFromFEN(activeGames.get(gameId).fen);
-  const clockIndex = turn === 'w' ? 0 : 1;
-  let interval = setInterval(() => {
+  const interval = setInterval(() => {
     const game = activeGames.get(gameId);
-    if (game) {
-      if (game.clocks[clockIndex] > 0) {
-        game.clocks[clockIndex]--;
-      } else {
-        clearInterval(interval);
-      }
-    } else {
+
+    if (!game) {
       clearInterval(interval);
+      return;
+    }
+
+    const { fen, clocks } = game;
+    const turn = getTurnColorFromFEN(fen);
+    const isPlayerWhite = turn === 'w';
+    const clockIndex = isPlayerWhite ? 0 : 1;
+
+    if (clocks[clockIndex] <= 0) {
+      finishGame(gameId, isPlayerWhite ? 'black' : 'white', 'opponent timeout');
+      clearInterval(interval);
+    } else {
+      clocks[clockIndex]--;
+      io.to(gameId).emit('update-clock', clocks);
     }
   }, 1000);
 };
