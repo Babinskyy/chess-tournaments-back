@@ -8,6 +8,7 @@ import { addPoints } from './addPoints';
 import { finishGame } from './finishGame';
 import { getUsersArray } from '../utils/getUsersArray';
 import { User } from '../types/types.types';
+import { startCountdown } from './startCountdown';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const INITIAL_MINUTES = 3;
@@ -133,6 +134,7 @@ export const onConnection = (
             user.status = 'inGame';
           }
         });
+        startCountdown(game, activeGames);
       }
       io.emit('users-list-update', getUsersArray(activeUsers));
       io.to(game!).emit('player-join', players);
@@ -164,6 +166,8 @@ export const onConnection = (
           ? finishedGame.players[0]
           : result === 'black'
           ? finishedGame.players[1]
+          : result === ''
+          ? ''
           : 'draw';
 
       activeUsers.forEach((user) => {
@@ -174,6 +178,7 @@ export const onConnection = (
           user.status = 'notStarted';
         }
       });
+
       addPoints(activeUsers, winner, room, activeGames);
       finishGame(room, result, reason);
       activeGames.delete(room);
