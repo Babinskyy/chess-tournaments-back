@@ -16,8 +16,7 @@ export const startGame = (gameId: string, activeGames: Map<any, any>) => {
     const isPlayerWhite = turn === 'w';
     const clockIndex = isPlayerWhite ? 0 : 1;
 
-    if (clocks[clockIndex] <= 0) {
-      finishGame(gameId, isPlayerWhite ? 'black' : 'white', 'opponent timeout');
+    if (clocks.some((clock: number) => clock <= 0)) {
       clearInterval(interval);
     } else {
       clocks[clockIndex]--;

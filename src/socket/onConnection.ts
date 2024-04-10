@@ -55,6 +55,7 @@ export const onConnection = (
 
   socket.on('user-reconnect', (username) => {
     userReconnect(username, socket.id, activeGames, socket, io);
+    io.emit('users-list-update', getUsersArray(activeUsers));
   });
 
   socket.on('user-logout', ({ username, isPlayerWhite, room }): void => {
@@ -171,10 +172,10 @@ export const onConnection = (
           : 'draw';
 
       activeUsers.forEach((user) => {
-        if (user.username === finishedGame.players[0]) {
-          user.status = 'notStarted';
-        }
-        if (user.username === finishedGame.players[1]) {
+        if (
+          user.username === finishedGame.players[0] ||
+          user.username === finishedGame.players[1]
+        ) {
           user.status = 'notStarted';
         }
       });
