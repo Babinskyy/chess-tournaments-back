@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { activeUsers, allUsers } from './onConnection';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { findGameByUsername } from '../utils/findGameByUsername';
+import { findPlayerByUsername } from '../utils/findPlayerByUsername';
 
 export const userReconnect = (
   username: string,
@@ -10,9 +11,7 @@ export const userReconnect = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
-  const existingUser = Array.from(allUsers).find(
-    (user) => user.username === username
-  );
+  const existingUser = findPlayerByUsername(username, allUsers)
 
   if (existingUser) {
     const updatedUsers = new Set(
@@ -26,6 +25,7 @@ export const userReconnect = (
       username: username,
       points: existingUser.points,
       status: existingUser.status,
+      isAdmin: existingUser.isAdmin,
     });
 
     activeUsers.clear();
@@ -35,6 +35,7 @@ export const userReconnect = (
   }
 
   const activeGameId = findGameByUsername(username, activeGames);
+  const playerInfo = findPlayerByUsername(username, allUsers)
 
   if (activeGameId) {
     socket.join(activeGameId);
@@ -45,5 +46,7 @@ export const userReconnect = (
     const fen = activeGames.get(activeGameId).fen;
     const clocks = activeGames.get(activeGameId).clocks;
     io.to(activeGameId).emit('recover-game', { fen, activeGameId, clocks });
+  } else {
+    socket.emit('recover-player', playerInfo)
   }
 };

@@ -7,12 +7,13 @@ import { startGame } from './startGame';
 import { addPoints } from './addPoints';
 import { finishGame } from './finishGame';
 import { getUsersArray } from '../utils/getUsersArray';
-import { User } from '../types/types.types';
+import { PlayerStatus, Tournament, User } from '../types/types.types';
 import { startCountdown } from './startCountdown';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const INITIAL_MINUTES = 3;
 
+export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
 export const activeGames = new Map();
@@ -21,33 +22,54 @@ export const finishedGames = new Map();
 export const onConnection = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
-  io.emit('socket-id', socket.id);
   socket.emit('user-id', socket.id);
+  io.emit('socket-id', socket.id);
 
-  socket.on('user-login', (user: User, callback: Function) => {
-    const isUsernameTaken = Array.from(allUsers).some(
-      (existingUser) =>
-        existingUser.username.toLowerCase() === user.username.toLowerCase()
-    );
+  socket.on(
+    'user-login',
+    (
+      {
+        username,
+        id: newPlayerId,
+        tournamentId,
+      }: { username: string; id: string; tournamentId: string },
+      callback: Function
+    ) => {
+      const isUsernameTaken = Array.from(allUsers).some(
+        (existingUser) =>
+          existingUser.username.toLowerCase() === username.toLowerCase()
+      );
 
-    if (isUsernameTaken) {
-      callback({ success: false, message: 'Username taken' });
-    } else {
-      activeUsers.add({
-        id: user.id,
-        username: user.username,
-        points: 0,
-        status: 'notStarted',
-      });
-      allUsers.add({
-        id: user.id,
-        username: user.username,
-        points: 0,
-        status: 'notStarted',
-      });
-      callback({ success: true, message: 'User added successfully' });
+      if (isUsernameTaken) {
+        callback({ success: false, message: 'Username taken' });
+      } else {
+        const newUser = {
+          id: newPlayerId,
+          username: username,
+          points: 0,
+          status: PlayerStatus.NOT_STARTED,
+          isAdmin: activeUsers.size === 0,
+        };
+
+        activeUsers.add(newUser);
+        allUsers.add(newUser);
+
+        const tournament = Array.from(activeTournaments).find(
+          (tournament) => tournament.id === tournamentId
+        );
+
+        if (tournament) {
+          tournament.playersUsernames = [...tournament?.playersUsernames, username];
+        }
+
+        callback({
+          success: true,
+          message: `User added successfully`,
+          user: newUser,
+        });
+      }
     }
-  });
+  );
 
   socket.on('user-entered-lobby', () => {
     io.emit('users-list-update', getUsersArray(activeUsers));
@@ -118,7 +140,7 @@ export const onConnection = (
       });
       activeUsers.forEach((user) => {
         if (user.username === player) {
-          user.status = 'waiting';
+          user.status = PlayerStatus.WAITING;
         }
       });
     }
@@ -129,10 +151,10 @@ export const onConnection = (
       if (players.length === 2) {
         activeUsers.forEach((user) => {
           if (user.username === players![0]) {
-            user.status = 'inGame';
+            user.status = PlayerStatus.IN_GAME;
           }
           if (user.username === players![1]) {
-            user.status = 'inGame';
+            user.status = PlayerStatus.IN_GAME;
           }
         });
         startCountdown(game, activeGames);
@@ -176,7 +198,7 @@ export const onConnection = (
           user.username === finishedGame.players[0] ||
           user.username === finishedGame.players[1]
         ) {
-          user.status = 'notStarted';
+          user.status = PlayerStatus.NOT_STARTED;
         }
       });
 
@@ -184,5 +206,32 @@ export const onConnection = (
       finishGame(room, result, reason);
       activeGames.delete(room);
     }
+  });
+
+  socket.on('create-tournament', (tournament: Tournament) => {
+    activeTournaments.add({
+      id: tournament.id,
+      name: tournament.name,
+      playersUsernames: [],
+    });
+  });
+
+  socket.on('enter-tournament', (tournamentId: string, callback: Function) => {
+    const tournamentName = Array.from(activeTournaments).find(
+      (t) => t.id === tournamentId
+    )?.name;
+
+    if (tournamentName) {
+      callback({ tournamentName: tournamentName, isTournamentActive: true });
+    } else {
+      callback({
+        tournamentName: '',
+        isTournamentActive: false,
+      });
+    }
+  });
+
+  socket.on('start-tournament', (tournamentId: string) => {
+    io.emit('tournament-started', tournamentId);
   });
 };
