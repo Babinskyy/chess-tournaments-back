@@ -1,5 +1,4 @@
 import { io } from '../..';
-import { finishGame } from './finishGame';
 
 const INITIAL_SECONDS_TO_START = 15;
 
