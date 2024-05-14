@@ -1,6 +1,5 @@
 import { io } from '../..';
 import { getTurnColorFromFEN } from '../utils/getTurnColorFromFEN';
-import { finishGame } from './finishGame';
 
 export const startGame = (gameId: string, activeGames: Map<any, any>) => {
   const interval = setInterval(() => {

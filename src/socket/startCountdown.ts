@@ -1,6 +1,7 @@
 import { io } from '../..';
+import { INITIAL_SECONDS_TO_START } from '../constansts/constants';
 
-const INITIAL_SECONDS_TO_START = 15;
+
 
 export const startCountdown = (gameId: string, activeGames: Map<any, any>) => {
   let seconds = INITIAL_SECONDS_TO_START;

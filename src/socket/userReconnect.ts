@@ -41,7 +41,7 @@ export const userReconnect = (
     socket.join(activeGameId);
     io.to(activeGameId).emit(
       'player-join',
-      activeGames.get(activeGameId).players
+      activeGames.get(activeGameId).playersUsernames
     );
     const fen = activeGames.get(activeGameId).fen;
     const clocks = activeGames.get(activeGameId).clocks;
