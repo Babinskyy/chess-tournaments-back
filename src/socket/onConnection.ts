@@ -118,11 +118,31 @@ export const onConnection = (
     let tournament = undefined;
 
     if (existingUser) {
-      activeUsers.delete(existingUser);
       tournament = findTournamentByUsername(
         existingUser?.username,
         activeTournaments
       );
+
+      const game = findGameBySpectator(existingUser.username, activeGames);
+
+      if (game) {
+        if (activeGames.has(game)) {
+          const activeGame = activeGames.get(game)!;
+          activeGame.spectators = activeGame.spectators.filter(
+            (spectator) => spectator !== existingUser.username
+          );
+          activeUsers.forEach((user) => {
+            if (user.username === existingUser.username) {
+              user.status = PlayerStatus.NOT_STARTED;
+            }
+          });
+          socket.leave(game);
+          io.emit("users-list-update", getUsersArray(activeUsers));
+        } else {
+          console.error(`Game with ID ${game} not found.`);
+        }
+      }
+      activeUsers.delete(existingUser);
     }
 
     if (tournament) {
@@ -303,7 +323,9 @@ export const onConnection = (
     if (game) {
       if (activeGames.has(game)) {
         activeGame = activeGames.get(game)!;
-        activeGame?.spectators.filter((spectator) => spectator !== player);
+        activeGame.spectators = activeGame?.spectators.filter(
+          (spectator) => spectator !== player
+        );
         activeUsers.forEach((user) => {
           if (user.username === player) {
             user.status = PlayerStatus.NOT_STARTED;
@@ -318,15 +340,11 @@ export const onConnection = (
   });
 
   socket.on("cancel-game-search", (room: string) => {
-    console.log("room", room);
-    console.log("1", activeGames);
     activeGames.delete(room);
     const player = getUserBySocket(socket.id, activeUsers);
     if (player) {
       player.status = PlayerStatus.NOT_STARTED;
     }
     io.emit("users-list-update", getUsersArray(activeUsers));
-    console.log(room);
-    console.log("2", activeGames);
   });
 };
