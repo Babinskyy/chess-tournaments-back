@@ -11,6 +11,9 @@ import { Game, PlayerStatus, Tournament, User } from "../types/types.types";
 import { startCountdown } from "./startCountdown";
 import { INITIAL_FEN, INITIAL_MINUTES } from "../constansts/constants";
 import { findGameByUsername } from "../utils/findGameByUsername";
+import { findGameBySpectator } from "../utils/findGameBySpectator";
+import { getUserBySocket } from "../utils/getUserBySocket";
+import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
@@ -90,8 +93,18 @@ export const onConnection = (
     if (existingUser) {
       activeUsers.delete(existingUser);
       allUsers.delete(existingUser);
+      const tournament = findTournamentByUsername(
+        existingUser?.username,
+        activeTournaments
+      );
+      if (tournament) {
+        tournament.playersUsernames = tournament.playersUsernames.filter(
+          (player) => player !== existingUser?.username
+        );
+      }
     }
 
+    socket.leave(room);
     finishGame(room, !isPlayerWhite ? "white" : "black", "opponent disconnect");
 
     io.emit("users-list-update", getUsersArray(activeUsers));
@@ -102,8 +115,20 @@ export const onConnection = (
       (user) => user.id === socket.id
     );
 
+    let tournament = undefined;
+
     if (existingUser) {
       activeUsers.delete(existingUser);
+      tournament = findTournamentByUsername(
+        existingUser?.username,
+        activeTournaments
+      );
+    }
+
+    if (tournament) {
+      if (!tournament.playersUsernames) {
+        activeTournaments.delete(tournament);
+      }
     }
 
     io.emit("users-list-update", getUsersArray(activeUsers));
@@ -124,7 +149,7 @@ export const onConnection = (
     for (const [gameId, gameData] of activeGames) {
       if (gameData.playersUsernames.length < 2) {
         game = gameId;
-        socket.emit("gameId", game);
+        socket.emit("set-game", game);
         playersUsernames = gameData.playersUsernames;
 
         break;
@@ -133,7 +158,7 @@ export const onConnection = (
 
     if (!game) {
       game = v4();
-      socket.emit("gameId", game);
+      socket.emit("set-game", game);
       playersUsernames = [];
       activeGames.set(game, {
         fen: INITIAL_FEN,
@@ -242,20 +267,20 @@ export const onConnection = (
   socket.on(
     "spectator-join",
     ({ selectedPlayer, selectingPlayer }, callback: Function) => {
-      const room = findGameByUsername(selectedPlayer, activeGames);
+      const game = findGameByUsername(selectedPlayer, activeGames);
 
       let activeGame;
 
-      if (room) {
-        if (activeGames.has(room)) {
-          activeGame = activeGames.get(room)!;
+      if (game) {
+        if (activeGames.has(game)) {
+          activeGame = activeGames.get(game)!;
           activeGame?.spectators.push(selectingPlayer);
-          socket.emit("gameId", room);
-          socket.join(room);
+          socket.emit("set-game", game);
+          socket.join(game);
           const { fen, clocks } = activeGame;
-          socket.emit("recover-game", { fen, activeGameId: room, clocks });
+          socket.emit("recover-game", { fen, activeGameId: game, clocks });
         } else {
-          console.error(`Game with ID ${room} not found.`);
+          console.error(`Game with ID ${game} not found.`);
         }
       }
 
@@ -264,9 +289,44 @@ export const onConnection = (
           user.status = PlayerStatus.SPECTATOR;
         }
       });
-      
+
       io.emit("users-list-update", getUsersArray(activeUsers));
       callback(activeGame?.playersUsernames);
     }
   );
+
+  socket.on("stop-spectating", (player: string) => {
+    const game = findGameBySpectator(player, activeGames);
+
+    let activeGame;
+
+    if (game) {
+      if (activeGames.has(game)) {
+        activeGame = activeGames.get(game)!;
+        activeGame?.spectators.filter((spectator) => spectator !== player);
+        activeUsers.forEach((user) => {
+          if (user.username === player) {
+            user.status = PlayerStatus.NOT_STARTED;
+          }
+        });
+        socket.leave(game);
+        io.emit("users-list-update", getUsersArray(activeUsers));
+      } else {
+        console.error(`Game with ID ${game} not found.`);
+      }
+    }
+  });
+
+  socket.on("cancel-game-search", (room: string) => {
+    console.log("room", room);
+    console.log("1", activeGames);
+    activeGames.delete(room);
+    const player = getUserBySocket(socket.id, activeUsers);
+    if (player) {
+      player.status = PlayerStatus.NOT_STARTED;
+    }
+    io.emit("users-list-update", getUsersArray(activeUsers));
+    console.log(room);
+    console.log("2", activeGames);
+  });
 };
