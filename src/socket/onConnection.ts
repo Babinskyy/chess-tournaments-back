@@ -14,6 +14,7 @@ import { findGameByUsername } from "../utils/findGameByUsername";
 import { findGameBySpectator } from "../utils/findGameBySpectator";
 import { getUserBySocket } from "../utils/getUserBySocket";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
+import { SocketEvent } from "../types/types.types";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
@@ -28,7 +29,7 @@ export const onConnection = (
   io.emit("socket-id", socket.id);
 
   socket.on(
-    "user-login",
+    SocketEvent.USER_LOGIN,
     (
       {
         username,
@@ -76,41 +77,48 @@ export const onConnection = (
     }
   );
 
-  socket.on("user-entered-lobby", () => {
+  socket.on(SocketEvent.USER_ENTERED_LOBBY, () => {
     io.emit("users-list-update", getUsersArray(activeUsers));
   });
 
-  socket.on("user-reconnect", (username) => {
+  socket.on(SocketEvent.USER_RECONNECT, (username) => {
     userReconnect(username, socket.id, activeGames, socket, io);
     io.emit("users-list-update", getUsersArray(activeUsers));
   });
 
-  socket.on("user-logout", ({ username, isPlayerWhite, room }): void => {
-    const existingUser = Array.from(activeUsers).find(
-      (user) => user.username === username
-    );
-
-    if (existingUser) {
-      activeUsers.delete(existingUser);
-      allUsers.delete(existingUser);
-      const tournament = findTournamentByUsername(
-        existingUser?.username,
-        activeTournaments
+  socket.on(
+    SocketEvent.USER_LOGOUT,
+    ({ username, isPlayerWhite, room }): void => {
+      const existingUser = Array.from(activeUsers).find(
+        (user) => user.username === username
       );
-      if (tournament) {
-        tournament.playersUsernames = tournament.playersUsernames.filter(
-          (player) => player !== existingUser?.username
+
+      if (existingUser) {
+        activeUsers.delete(existingUser);
+        allUsers.delete(existingUser);
+        const tournament = findTournamentByUsername(
+          existingUser?.username,
+          activeTournaments
         );
+        if (tournament) {
+          tournament.playersUsernames = tournament.playersUsernames.filter(
+            (player) => player !== existingUser?.username
+          );
+        }
       }
+
+      socket.leave(room);
+      finishGame(
+        room,
+        !isPlayerWhite ? "white" : "black",
+        "opponent disconnect"
+      );
+
+      io.emit("users-list-update", getUsersArray(activeUsers));
     }
+  );
 
-    socket.leave(room);
-    finishGame(room, !isPlayerWhite ? "white" : "black", "opponent disconnect");
-
-    io.emit("users-list-update", getUsersArray(activeUsers));
-  });
-
-  socket.on("disconnect", (reason): void => {
+  socket.on(SocketEvent.DISCONNECT, (reason): void => {
     const existingUser = Array.from(activeUsers).find(
       (user) => user.id === socket.id
     );
@@ -154,7 +162,7 @@ export const onConnection = (
     io.emit("users-list-update", getUsersArray(activeUsers));
   });
 
-  socket.on("move", (move, game) => {
+  socket.on(SocketEvent.MOVE, (move, game) => {
     if (!game) {
       socket.broadcast.emit("player-move", move);
     } else {
@@ -162,7 +170,7 @@ export const onConnection = (
     }
   });
 
-  socket.on("join-game", (player: string) => {
+  socket.on(SocketEvent.JOIN_GAME, (player: string) => {
     let game: string | undefined;
     let playersUsernames: string[] | undefined;
 
@@ -213,7 +221,7 @@ export const onConnection = (
   });
 
   socket.on(
-    "update-game",
+    SocketEvent.UPDATE_GAME,
     ({ room, currentPosition }: { room: string; currentPosition: string }) => {
       if (activeGames.has(room)) {
         const activeGame = activeGames.get(room)!;
@@ -224,11 +232,11 @@ export const onConnection = (
     }
   );
 
-  socket.on("game-started", (gameId) => {
+  socket.on(SocketEvent.GAME_STARTED, (gameId) => {
     startGame(gameId, activeGames);
   });
 
-  socket.on("game-end", ({ result, reason, room }) => {
+  socket.on(SocketEvent.GAME_END, ({ result, reason, room }) => {
     const finishedGame = activeGames.get(room);
 
     if (finishedGame) {
@@ -257,7 +265,7 @@ export const onConnection = (
     }
   });
 
-  socket.on("create-tournament", (tournament: Tournament) => {
+  socket.on(SocketEvent.CREATE_TOURNAMENT, (tournament: Tournament) => {
     activeTournaments.add({
       id: tournament.id,
       name: tournament.name,
@@ -265,27 +273,30 @@ export const onConnection = (
     });
   });
 
-  socket.on("enter-tournament", (tournamentId: string, callback: Function) => {
-    const tournamentName = Array.from(activeTournaments).find(
-      (t) => t.id === tournamentId
-    )?.name;
+  socket.on(
+    SocketEvent.ENTER_TOURNAMENT,
+    (tournamentId: string, callback: Function) => {
+      const tournamentName = Array.from(activeTournaments).find(
+        (t) => t.id === tournamentId
+      )?.name;
 
-    if (tournamentName) {
-      callback({ tournamentName: tournamentName, isTournamentActive: true });
-    } else {
-      callback({
-        tournamentName: "",
-        isTournamentActive: false,
-      });
+      if (tournamentName) {
+        callback({ tournamentName: tournamentName, isTournamentActive: true });
+      } else {
+        callback({
+          tournamentName: "",
+          isTournamentActive: false,
+        });
+      }
     }
-  });
+  );
 
-  socket.on("start-tournament", (tournamentId: string) => {
+  socket.on(SocketEvent.START_TOURNAMENT, (tournamentId: string) => {
     io.emit("tournament-started", tournamentId);
   });
 
   socket.on(
-    "spectator-join",
+    SocketEvent.SPECTATOR_JOIN,
     ({ selectedPlayer, selectingPlayer }, callback: Function) => {
       const game = findGameByUsername(selectedPlayer, activeGames);
 
@@ -315,7 +326,7 @@ export const onConnection = (
     }
   );
 
-  socket.on("stop-spectating", (player: string) => {
+  socket.on(SocketEvent.STOP_SPECTATING, (player: string) => {
     const game = findGameBySpectator(player, activeGames);
 
     let activeGame;
@@ -339,7 +350,7 @@ export const onConnection = (
     }
   });
 
-  socket.on("cancel-game-search", (room: string) => {
+  socket.on(SocketEvent.CANCEL_GAME_SEARCH, (room: string) => {
     activeGames.delete(room);
     const player = getUserBySocket(socket.id, activeUsers);
     if (player) {
