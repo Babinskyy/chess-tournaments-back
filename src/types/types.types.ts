@@ -15,6 +15,11 @@ export enum SocketEvent {
   SPECTATOR_JOIN = "spectator-join",
   STOP_SPECTATING = "stop-spectating",
   CANCEL_GAME_SEARCH = "cancel-game-search",
+  CHECK_PLAYER = "check-player",
+  PLAYER_JOIN = "player-join",
+  SET_GAME = "set-game",
+  USER_ID = "user-id",
+  USERS_LIST_UPDATE = "users-list-update",
 }
 
 export enum PlayerStatus {
@@ -22,6 +27,7 @@ export enum PlayerStatus {
   IN_GAME = "inGame",
   WAITING = "waiting",
   SPECTATOR = "spectator",
+  DISCONNECTED = "disconnected",
 }
 
 export type User = {
@@ -44,3 +50,7 @@ export type Game = {
   clocks: [number, number];
   spectators: string[];
 };
+
+export enum TemporaryPlayer {
+  ID = "00000000000000",
+}
