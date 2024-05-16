@@ -29,6 +29,7 @@ export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
 export const activeGames: Map<string, Game> = new Map();
 export const finishedGames: Map<string, Game> = new Map();
+export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
 export const onConnection = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
@@ -59,6 +60,7 @@ export const onConnection = (
           points: 0,
           status: PlayerStatus.NOT_STARTED,
           isAdmin: activeUsers.size === 0,
+          isDeleted: false,
         };
 
         activeUsers.add(newUser);
@@ -159,6 +161,7 @@ export const onConnection = (
         status: existingUser.status,
         points: 0,
         isAdmin: false,
+        isDeleted: false,
       });
 
       activeUsers.forEach((player) => {
@@ -377,13 +380,16 @@ export const onConnection = (
     io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
   });
 
-  socket.on(SocketEvent.CHECK_PLAYER, (username: string, callback: Function) => {
-    const player = findPlayerByUsername(username, allUsers)
+  socket.on(
+    SocketEvent.CHECK_PLAYER,
+    (username: string, callback: Function) => {
+      const player = findPlayerByUsername(username, allUsers);
 
-    if(player){
-      callback(true)
-    } else {
-      callback(false)
+      if (!player?.isDeleted) {
+        callback(true);
+      } else {
+        callback(false);
+      }
     }
-  });
+  );
 };

@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
-import { activeUsers, allUsers } from "./onConnection";
+import { activeUsers, allUsers, disconnectTimeouts } from "./onConnection";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { SocketEvent } from "../types/types.types";
 
@@ -30,6 +30,7 @@ export const userReconnect = (
       points: existingUser.points,
       status: temporaryPlayer.status,
       isAdmin: existingUser.isAdmin,
+      isDeleted: false,
     });
 
     activeUsers.clear();
@@ -52,5 +53,7 @@ export const userReconnect = (
     } else {
       socket.emit("recover-player", playerInfo);
     }
+
+    clearTimeout(disconnectTimeouts.get(existingUser.username));
   }
 };

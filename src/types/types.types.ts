@@ -36,6 +36,7 @@ export type User = {
   points: number;
   status: PlayerStatus;
   isAdmin: boolean;
+  isDeleted: boolean;
 };
 
 export type Tournament = {

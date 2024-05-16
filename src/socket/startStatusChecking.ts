@@ -1,20 +1,21 @@
 import { io } from "../..";
-import {
-  PlayerStatus,
-  SocketEvent,
-  TemporaryPlayer,
-} from "../types/types.types";
+import { PlayerStatus, SocketEvent } from "../types/types.types";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { getUsersArray } from "../utils/getUsersArray";
 import { finishGame } from "./finishGame";
-import { activeGames, activeUsers, allUsers } from "./onConnection";
+import {
+  activeGames,
+  activeUsers,
+  allUsers,
+  disconnectTimeouts,
+} from "./onConnection";
 
 const USER_DELETION_TIME = 30000;
 
 export const startStatusChecking = (playerUsername: string) => {
-  setTimeout(() => {
+  const disconnectTimeout = setTimeout(() => {
     try {
       const player = findPlayerByUsername(playerUsername, activeUsers);
       const temporaryPlayer = findTemporaryPlayerByUsername(
@@ -27,8 +28,17 @@ export const startStatusChecking = (playerUsername: string) => {
         return;
       }
       if (player?.status === PlayerStatus.DISCONNECTED) {
-        activeUsers.delete(player);
-        allUsers.delete(player);
+        activeUsers.forEach((user) => {
+          if (player === user) {
+            user.isDeleted = true;
+          }
+        });
+        allUsers.forEach((user) => {
+          if (player === user) {
+            user.isDeleted = true;
+          }
+        });
+        
         if (temporaryPlayer) {
           allUsers.delete(temporaryPlayer);
         }
@@ -47,4 +57,6 @@ export const startStatusChecking = (playerUsername: string) => {
       console.error("Error checking user status:", error);
     }
   }, USER_DELETION_TIME);
+
+  disconnectTimeouts.set(playerUsername, disconnectTimeout);
 };
