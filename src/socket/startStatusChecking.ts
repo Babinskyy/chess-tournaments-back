@@ -11,6 +11,7 @@ import {
   allUsers,
   disconnectTimeouts,
 } from "./onConnection";
+import { addPoints } from "./addPoints";
 
 const USER_DELETION_TIME = 30000;
 
@@ -38,13 +39,23 @@ export const startStatusChecking = (playerUsername: string) => {
             user.isDeleted = true;
           }
         });
-        
+
         if (temporaryPlayer) {
           allUsers.delete(temporaryPlayer);
         }
         if (game) {
           const isPlayerWhite =
             playerUsername === activeGames.get(game)?.playersUsernames[0];
+
+          const finishedGame = activeGames.get(game);
+
+          if (finishedGame) {
+            const winner = isPlayerWhite
+              ? finishedGame.playersUsernames[1]
+              : finishedGame.playersUsernames[0];
+
+            addPoints(activeUsers, winner, game, activeGames);
+          }
           finishGame(
             game,
             !isPlayerWhite ? "white" : "black",

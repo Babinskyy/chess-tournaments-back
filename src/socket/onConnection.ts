@@ -105,15 +105,35 @@ export const onConnection = (
       );
 
       if (existingUser) {
-        existingUser.status = PlayerStatus.DISCONNECTED;
+        existingUser.isDeleted = true;
       }
 
-      socket.leave(room);
-      finishGame(
-        room,
-        !isPlayerWhite ? "white" : "black",
-        "opponent disconnect"
-      );
+      const finishedGame = activeGames.get(room);
+
+      if (finishedGame) {
+        const winner = isPlayerWhite
+          ? finishedGame.playersUsernames[1]
+          : finishedGame.playersUsernames[0];
+
+        activeUsers.forEach((user) => {
+          if (
+            user.username === finishedGame.playersUsernames[0] ||
+            user.username === finishedGame.playersUsernames[1] ||
+            finishedGame.spectators.includes(user.username)
+          ) {
+            user.status = PlayerStatus.NOT_STARTED;
+          }
+        });
+
+        addPoints(activeUsers, winner, room, activeGames);
+        socket.leave(room);
+        finishGame(
+          room,
+          !isPlayerWhite ? "white" : "black",
+          "opponent disconnect"
+        );
+        activeGames.delete(room);
+      }
 
       io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
     }
