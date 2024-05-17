@@ -3,7 +3,6 @@ import { PlayerStatus, SocketEvent } from "../types/types.types";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
-import { getUsersArray } from "../utils/getUsersArray";
 import { finishGame } from "./finishGame";
 import {
   activeGames,
@@ -12,6 +11,8 @@ import {
   disconnectTimeouts,
 } from "./onConnection";
 import { addPoints } from "./addPoints";
+import { findTournamentByUsername } from "../utils/findTournamentByUsername";
+import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 
 const USER_DELETION_TIME = 30000;
 
@@ -62,7 +63,14 @@ export const startStatusChecking = (playerUsername: string) => {
             "opponent disconnect"
           );
         }
-        io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+        const tournamentId = findTournamentByUsername(playerUsername)?.id;
+
+        if (tournamentId) {
+          io.to(tournamentId).emit(
+            SocketEvent.USERS_LIST_UPDATE,
+            getPlayersFromTournamentById(tournamentId)
+          );
+        }
       }
     } catch (error) {
       console.error("Error checking user status:", error);

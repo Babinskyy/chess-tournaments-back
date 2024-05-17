@@ -6,7 +6,6 @@ import { v4 } from "uuid";
 import { startGame } from "./startGame";
 import { addPoints } from "./addPoints";
 import { finishGame } from "./finishGame";
-import { getUsersArray } from "../utils/getUsersArray";
 import {
   Game,
   PlayerStatus,
@@ -24,6 +23,7 @@ import { SocketEvent } from "../types/types.types";
 import { startStatusChecking } from "./startStatusChecking";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
+import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
@@ -89,8 +89,11 @@ export const onConnection = (
     }
   );
 
-  socket.on(SocketEvent.USER_ENTERED_LOBBY, () => {
-    io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+  socket.on(SocketEvent.USER_ENTERED_LOBBY, (tournamentId: string) => {
+    io.to(tournamentId).emit(
+      SocketEvent.USERS_LIST_UPDATE,
+      getPlayersFromTournamentById(tournamentId)
+    );
   });
 
   socket.on(SocketEvent.USER_RECONNECT, (username) => {
@@ -135,7 +138,13 @@ export const onConnection = (
         activeGames.delete(room);
       }
 
-      io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+      const tournamentId = findTournamentByUsername(username)?.id;
+      if (tournamentId) {
+        io.to(tournamentId).emit(
+          SocketEvent.USERS_LIST_UPDATE,
+          getPlayersFromTournamentById(tournamentId)
+        );
+      }
     }
   );
 
@@ -147,10 +156,7 @@ export const onConnection = (
     let tournament = undefined;
 
     if (existingUser) {
-      tournament = findTournamentByUsername(
-        existingUser?.username,
-        activeTournaments
-      );
+      tournament = findTournamentByUsername(existingUser?.username);
 
       const spectatorGame = findGameBySpectator(
         existingUser.username,
@@ -210,8 +216,15 @@ export const onConnection = (
         activeTournaments.delete(tournament);
       }
     }
-
-    io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+    if (existingUser) {
+      const tournamentId = findTournamentByUsername(existingUser.username)?.id;
+      if (tournamentId) {
+        io.to(tournamentId).emit(
+          SocketEvent.USERS_LIST_UPDATE,
+          getPlayersFromTournamentById(tournamentId)
+        );
+      }
+    }
   });
 
   socket.on(SocketEvent.MOVE, (move, game) => {
@@ -267,8 +280,15 @@ export const onConnection = (
         });
         startCountdown(game, activeGames);
       }
-      io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
-      io.to(game!).emit(SocketEvent.PLAYER_JOIN, playersUsernames);
+
+      const tournamentId = findTournamentByUsername(player)?.id;
+      if (tournamentId) {
+        io.to(tournamentId).emit(
+          SocketEvent.USERS_LIST_UPDATE,
+          getPlayersFromTournamentById(tournamentId)
+        );
+        io.to(game!).emit(SocketEvent.PLAYER_JOIN, playersUsernames);
+      }
     }
   });
 
@@ -318,6 +338,7 @@ export const onConnection = (
   });
 
   socket.on(SocketEvent.CREATE_TOURNAMENT, (tournament: Tournament) => {
+    socket.join(tournament.id);
     activeTournaments.add({
       id: tournament.id,
       name: tournament.name,
@@ -333,7 +354,7 @@ export const onConnection = (
         tournamentId,
         activeTournaments
       );
-
+      socket.join(tournamentId!);
       if (tournament) {
         callback({
           tournamentName: tournament.name,
@@ -356,7 +377,7 @@ export const onConnection = (
     if (tournamentToBeStarted) {
       tournamentToBeStarted.active = true;
     }
-    io.emit(SocketEvent.TOURNAMENT_STARTED, tournamentId);
+    io.to(tournamentId).emit(SocketEvent.TOURNAMENT_STARTED, tournamentId);
   });
 
   socket.on(
@@ -389,7 +410,13 @@ export const onConnection = (
         }
       });
 
-      io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+      const tournamentId = findTournamentByUsername(selectingPlayer)?.id;
+      if (tournamentId) {
+        io.to(tournamentId).emit(
+          SocketEvent.USERS_LIST_UPDATE,
+          getPlayersFromTournamentById(tournamentId)
+        );
+      }
       callback(activeGame?.playersUsernames);
     }
   );
@@ -411,7 +438,14 @@ export const onConnection = (
           }
         });
         socket.leave(game);
-        io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+
+        const tournamentId = findTournamentByUsername(player)?.id;
+        if (tournamentId) {
+          io.to(tournamentId).emit(
+            SocketEvent.USERS_LIST_UPDATE,
+            getPlayersFromTournamentById(tournamentId)
+          );
+        }
       } else {
         console.error(`Game with ID ${game} not found.`);
       }
@@ -424,8 +458,14 @@ export const onConnection = (
 
     if (player) {
       player.status = PlayerStatus.NOT_STARTED;
+      const tournamentId = findTournamentByUsername(player.username)?.id;
+      if (tournamentId) {
+        io.to(tournamentId).emit(
+          SocketEvent.USERS_LIST_UPDATE,
+          getPlayersFromTournamentById(tournamentId)
+        );
+      }
     }
-    io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
   });
 
   socket.on(

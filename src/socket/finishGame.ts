@@ -1,12 +1,15 @@
-import { getUsersArray } from "../utils/getUsersArray";
 import { io } from "../..";
-import { activeGames, activeUsers, allUsers } from "./onConnection";
+import { activeGames, allUsers } from "./onConnection";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
-import { PlayerStatus, SocketEvent } from "../types/types.types";
+import { PlayerStatus, SocketEvent, User } from "../types/types.types";
+import { findTournamentByUsername } from "../utils/findTournamentByUsername";
+import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 
 export const finishGame = (game: string, result: string, reason: string) => {
+  let tempPlayer: User | undefined;
   activeGames.get(game)?.playersUsernames.forEach((playerUsername) => {
     const player = findPlayerByUsername(playerUsername, allUsers);
+    tempPlayer = player;
     if (player) {
       player.status = PlayerStatus.NOT_STARTED;
     }
@@ -18,6 +21,16 @@ export const finishGame = (game: string, result: string, reason: string) => {
     }
   });
   activeGames.delete(game);
+
   io.to(game).emit(SocketEvent.FINISH_GAME, { result, reason });
-  io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
+
+  if (tempPlayer) {
+    const tournamentId = findTournamentByUsername(tempPlayer.username)?.id;
+    if (tournamentId) {
+      io.to(tournamentId).emit(
+        SocketEvent.USERS_LIST_UPDATE,
+        getPlayersFromTournamentById(tournamentId)
+      );
+    }
+  }
 };
