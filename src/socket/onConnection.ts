@@ -329,13 +329,19 @@ export const onConnection = (
   socket.on(
     SocketEvent.ENTER_TOURNAMENT,
     (tournamentId: string, callback: Function) => {
-      const tournament = findTournamentByTournamentId(tournamentId, activeTournaments)
+      const tournament = findTournamentByTournamentId(
+        tournamentId,
+        activeTournaments
+      );
 
       if (tournament) {
-        callback({ tournamentName: tournament.name, isTournamentActive: tournament.active });
+        callback({
+          tournamentName: tournament.name,
+          isTournamentActive: tournament.active,
+        });
       } else {
         callback({
-          tournamentName: "This tournament already started. You are unable to join.",
+          tournamentName: "",
           isTournamentActive: false,
         });
       }
