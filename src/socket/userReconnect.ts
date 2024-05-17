@@ -49,9 +49,9 @@ export const userReconnect = (
       );
       const fen = activeGames.get(activeGameId).fen;
       const clocks = activeGames.get(activeGameId).clocks;
-      io.to(activeGameId).emit("recover-game", { fen, activeGameId, clocks });
+      io.to(activeGameId).emit(SocketEvent.RECOVER_GAME, { fen, activeGameId, clocks });
     } else {
-      socket.emit("recover-player", playerInfo);
+      socket.emit(SocketEvent.RECOVER_PLAYER, playerInfo);
     }
 
     clearTimeout(disconnectTimeouts.get(existingUser.username));

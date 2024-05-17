@@ -169,9 +169,21 @@ export const onConnection = (
             }
           });
           socket.leave(spectatorGame);
-          io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
         } else {
+          existingUser.status = PlayerStatus.NOT_STARTED;
           console.error(`Game with ID ${spectatorGame} not found.`);
+        }
+      }
+
+      if (existingUser.status === PlayerStatus.WAITING) {
+        const game = findGameByUsername(existingUser.username, activeGames);
+        if (game) {
+          activeGames.delete(game);
+          const player = getUserBySocket(socket.id, activeUsers);
+
+          if (player) {
+            player.status = PlayerStatus.NOT_STARTED;
+          }
         }
       }
 
@@ -204,9 +216,9 @@ export const onConnection = (
 
   socket.on(SocketEvent.MOVE, (move, game) => {
     if (!game) {
-      socket.broadcast.emit("player-move", move);
+      socket.broadcast.emit(SocketEvent.PLAYER_MOVE, move);
     } else {
-      socket.to(game).emit("player-move", move);
+      socket.to(game).emit(SocketEvent.PLAYER_MOVE, move);
     }
   });
 
@@ -332,7 +344,7 @@ export const onConnection = (
   );
 
   socket.on(SocketEvent.START_TOURNAMENT, (tournamentId: string) => {
-    io.emit("tournament-started", tournamentId);
+    io.emit(SocketEvent.TOURNAMENT_STARTED, tournamentId);
   });
 
   socket.on(
@@ -349,7 +361,11 @@ export const onConnection = (
           socket.emit(SocketEvent.SET_GAME, game);
           socket.join(game);
           const { fen, clocks } = activeGame;
-          socket.emit("recover-game", { fen, activeGameId: game, clocks });
+          socket.emit(SocketEvent.RECOVER_GAME, {
+            fen,
+            activeGameId: game,
+            clocks,
+          });
         } else {
           console.error(`Game with ID ${game} not found.`);
         }

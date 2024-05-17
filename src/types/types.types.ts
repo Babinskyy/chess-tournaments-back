@@ -20,6 +20,11 @@ export enum SocketEvent {
   SET_GAME = "set-game",
   USER_ID = "user-id",
   USERS_LIST_UPDATE = "users-list-update",
+  PLAYER_MOVE = "player-move",
+  RECOVER_GAME = "recover-game",
+  RECOVER_PLAYER = "recover-player",
+  FINISH_GAME = "finish-game",
+  TOURNAMENT_STARTED = "tournament-started",
 }
 
 export enum PlayerStatus {
