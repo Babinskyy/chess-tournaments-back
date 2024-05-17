@@ -2,9 +2,16 @@ import { Server, Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
-import { activeUsers, allUsers, disconnectTimeouts } from "./onConnection";
+import {
+  activeTournaments,
+  activeUsers,
+  allUsers,
+  disconnectTimeouts,
+} from "./onConnection";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
-import { SocketEvent } from "../types/types.types";
+import { PlayerStatus, SocketEvent } from "../types/types.types";
+import { getUsersArray } from "../utils/getUsersArray";
+import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 
 export const userReconnect = (
   username: string,
@@ -49,11 +56,25 @@ export const userReconnect = (
       );
       const fen = activeGames.get(activeGameId).fen;
       const clocks = activeGames.get(activeGameId).clocks;
-      io.to(activeGameId).emit(SocketEvent.RECOVER_GAME, { fen, activeGameId, clocks });
+      io.to(activeGameId).emit(SocketEvent.RECOVER_GAME, {
+        fen,
+        activeGameId,
+        clocks,
+      });
     } else {
       socket.emit(SocketEvent.RECOVER_PLAYER, playerInfo);
     }
 
     clearTimeout(disconnectTimeouts.get(existingUser.username));
+  } else if (existingUser && !temporaryPlayer) {
+    const tournament = findTournamentByUsername(
+      existingUser.username,
+      activeTournaments
+    );
+    if (!tournament?.active) {
+      existingUser.isDeleted = false;
+      existingUser.status = PlayerStatus.NOT_STARTED;
+    }
   }
+  io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
 };

@@ -48,6 +48,7 @@ export type Tournament = {
   id: string;
   name: string;
   playersUsernames: string[];
+  active: boolean;
 };
 
 export type Game = {

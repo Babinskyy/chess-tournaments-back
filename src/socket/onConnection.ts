@@ -23,6 +23,7 @@ import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { SocketEvent } from "../types/types.types";
 import { startStatusChecking } from "./startStatusChecking";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
+import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
@@ -94,7 +95,6 @@ export const onConnection = (
 
   socket.on(SocketEvent.USER_RECONNECT, (username) => {
     userReconnect(username, socket.id, activeGames, socket, io);
-    io.emit(SocketEvent.USERS_LIST_UPDATE, getUsersArray(activeUsers));
   });
 
   socket.on(
@@ -322,21 +322,20 @@ export const onConnection = (
       id: tournament.id,
       name: tournament.name,
       playersUsernames: [],
+      active: false,
     });
   });
 
   socket.on(
     SocketEvent.ENTER_TOURNAMENT,
     (tournamentId: string, callback: Function) => {
-      const tournamentName = Array.from(activeTournaments).find(
-        (t) => t.id === tournamentId
-      )?.name;
+      const tournament = findTournamentByTournamentId(tournamentId, activeTournaments)
 
-      if (tournamentName) {
-        callback({ tournamentName: tournamentName, isTournamentActive: true });
+      if (tournament) {
+        callback({ tournamentName: tournament.name, isTournamentActive: tournament.active });
       } else {
         callback({
-          tournamentName: "",
+          tournamentName: "This tournament already started. You are unable to join.",
           isTournamentActive: false,
         });
       }
@@ -344,6 +343,13 @@ export const onConnection = (
   );
 
   socket.on(SocketEvent.START_TOURNAMENT, (tournamentId: string) => {
+    const tournamentToBeStarted = findTournamentByTournamentId(
+      tournamentId,
+      activeTournaments
+    );
+    if (tournamentToBeStarted) {
+      tournamentToBeStarted.active = true;
+    }
     io.emit(SocketEvent.TOURNAMENT_STARTED, tournamentId);
   });
 
