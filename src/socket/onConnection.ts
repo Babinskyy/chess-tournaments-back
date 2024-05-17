@@ -47,6 +47,7 @@ export const onConnection = (
       }: { username: string; id: string; tournamentId: string },
       callback: Function
     ) => {
+      socket.join(tournamentId);
       const isUsernameTaken = Array.from(allUsers).some(
         (existingUser) =>
           existingUser.username.toLowerCase() === username.toLowerCase()
@@ -55,23 +56,8 @@ export const onConnection = (
       if (isUsernameTaken) {
         callback({ success: false, message: "Username taken" });
       } else {
-        const newUser = {
-          id: newPlayerId,
-          username: username,
-          points: 0,
-          status: PlayerStatus.NOT_STARTED,
-          isAdmin: activeUsers.size === 0,
-          isDeleted: false,
-        };
-
-        activeUsers.add(newUser);
-
-        const newUserCopy = structuredClone(newUser);
-        allUsers.add(newUserCopy);
-
-        const tournament = Array.from(activeTournaments).find(
-          (tournament) => tournament.id === tournamentId
-        );
+        const tournament = findTournamentByTournamentId(tournamentId);
+        const isAdmin = !tournament?.playersUsernames.length;
 
         if (tournament) {
           tournament.playersUsernames = [
@@ -79,6 +65,20 @@ export const onConnection = (
             username,
           ];
         }
+
+        const newUser = {
+          id: newPlayerId,
+          username: username,
+          points: 0,
+          status: PlayerStatus.NOT_STARTED,
+          isAdmin: isAdmin,
+          isDeleted: false,
+        };
+
+        activeUsers.add(newUser);
+
+        const newUserCopy = structuredClone(newUser);
+        allUsers.add(newUserCopy);
 
         callback({
           success: true,
@@ -97,7 +97,7 @@ export const onConnection = (
   });
 
   socket.on(SocketEvent.USER_RECONNECT, (username) => {
-    userReconnect(username, socket.id, activeGames, socket, io);
+    userReconnect(username, socket);
   });
 
   socket.on(
@@ -350,10 +350,7 @@ export const onConnection = (
   socket.on(
     SocketEvent.ENTER_TOURNAMENT,
     (tournamentId: string, callback: Function) => {
-      const tournament = findTournamentByTournamentId(
-        tournamentId,
-        activeTournaments
-      );
+      const tournament = findTournamentByTournamentId(tournamentId);
       socket.join(tournamentId!);
       if (tournament) {
         callback({
@@ -370,10 +367,7 @@ export const onConnection = (
   );
 
   socket.on(SocketEvent.START_TOURNAMENT, (tournamentId: string) => {
-    const tournamentToBeStarted = findTournamentByTournamentId(
-      tournamentId,
-      activeTournaments
-    );
+    const tournamentToBeStarted = findTournamentByTournamentId(tournamentId);
     if (tournamentToBeStarted) {
       tournamentToBeStarted.active = true;
     }

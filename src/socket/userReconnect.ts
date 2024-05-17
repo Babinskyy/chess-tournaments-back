@@ -2,18 +2,21 @@ import { Server, Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
-import { activeUsers, allUsers, disconnectTimeouts } from "./onConnection";
+import {
+  activeGames,
+  activeUsers,
+  allUsers,
+  disconnectTimeouts,
+} from "./onConnection";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { PlayerStatus, SocketEvent } from "../types/types.types";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
+import { io } from "../..";
 
 export const userReconnect = (
   username: string,
-  socketid: string,
-  activeGames: Map<any, any>,
-  socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
-  io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
+  socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
   const existingUser = findPlayerByUsername(username, allUsers);
   const temporaryPlayer = findTemporaryPlayerByUsername(username, allUsers);
@@ -27,7 +30,7 @@ export const userReconnect = (
 
     updatedUsers.delete(existingUser);
     updatedUsers.add({
-      id: socketid,
+      id: socket.id,
       username: username,
       points: existingUser.points,
       status: temporaryPlayer.status,
@@ -47,10 +50,10 @@ export const userReconnect = (
       socket.join(activeGameId);
       io.to(activeGameId).emit(
         SocketEvent.PLAYER_JOIN,
-        activeGames.get(activeGameId).playersUsernames
+        activeGames.get(activeGameId)?.playersUsernames
       );
-      const fen = activeGames.get(activeGameId).fen;
-      const clocks = activeGames.get(activeGameId).clocks;
+      const fen = activeGames.get(activeGameId)?.fen;
+      const clocks = activeGames.get(activeGameId)?.clocks;
       io.to(activeGameId).emit(SocketEvent.RECOVER_GAME, {
         fen,
         activeGameId,
@@ -70,8 +73,8 @@ export const userReconnect = (
   }
 
   const tournamentId = findTournamentByUsername(username)?.id;
-
   if (tournamentId) {
+    socket.join(tournamentId)
     io.to(tournamentId).emit(
       SocketEvent.USERS_LIST_UPDATE,
       getPlayersFromTournamentById(tournamentId)
