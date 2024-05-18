@@ -10,13 +10,13 @@ export const finishGame = (game: string, result: string, reason: string) => {
   activeGames.get(game)?.playersUsernames.forEach((playerUsername) => {
     const player = findPlayerByUsername(playerUsername, allUsers);
     tempPlayer = player;
-    if (player) {
+    if (player && player.status !== PlayerStatus.DISCONNECTED) {
       player.status = PlayerStatus.NOT_STARTED;
     }
   });
   activeGames.get(game)?.spectators.forEach((spectator) => {
     const player = findPlayerByUsername(spectator, allUsers);
-    if (player) {
+    if (player && player.status !== PlayerStatus.DISCONNECTED) {
       player.status = PlayerStatus.NOT_STARTED;
     }
   });

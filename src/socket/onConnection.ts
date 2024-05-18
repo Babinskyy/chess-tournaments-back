@@ -334,7 +334,9 @@ export const onConnection = (
           user.username === finishedGame.playersUsernames[1] ||
           finishedGame.spectators.includes(user.username)
         ) {
-          user.status = PlayerStatus.NOT_STARTED;
+          if (user.status !== PlayerStatus.DISCONNECTED) {
+            user.status = PlayerStatus.NOT_STARTED;
+          }
         }
       });
 
