@@ -89,12 +89,19 @@ export const onConnection = (
     }
   );
 
-  socket.on(SocketEvent.USER_ENTERED_LOBBY, (tournamentId: string) => {
-    io.to(tournamentId).emit(
-      SocketEvent.USERS_LIST_UPDATE,
-      getPlayersFromTournamentById(tournamentId)
-    );
-  });
+  socket.on(
+    SocketEvent.USER_ENTERED_LOBBY,
+    (tournamentId: string, callback: Function) => {
+      const tournament = findTournamentByTournamentId(tournamentId);
+      if (tournament) {
+        callback(tournament.name);
+      }
+      io.to(tournamentId).emit(
+        SocketEvent.USERS_LIST_UPDATE,
+        getPlayersFromTournamentById(tournamentId)
+      );
+    }
+  );
 
   socket.on(SocketEvent.USER_RECONNECT, (username) => {
     userReconnect(username, socket);
@@ -471,6 +478,16 @@ export const onConnection = (
         callback(true);
       } else {
         callback(false);
+      }
+    }
+  );
+
+  socket.on(
+    SocketEvent.GET_TOURNAMENT_INFO,
+    (playerUsername: string, callback: Function) => {
+      const tournamentName = findTournamentByUsername(playerUsername)?.name;
+      if (tournamentName) {
+        callback(tournamentName);
       }
     }
   );

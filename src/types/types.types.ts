@@ -25,6 +25,7 @@ export enum SocketEvent {
   RECOVER_PLAYER = "recover-player",
   FINISH_GAME = "finish-game",
   TOURNAMENT_STARTED = "tournament-started",
+  GET_TOURNAMENT_INFO = "get-tournament-info",
 }
 
 export enum PlayerStatus {
