@@ -66,3 +66,8 @@ export type Game = {
 export enum TemporaryPlayer {
   ID = "00000000000000",
 }
+
+export enum Colors {
+  WHITE = "white",
+  BLACK = "black",
+}

@@ -1,5 +1,5 @@
 import { activeTournaments, activeUsers } from "../socket/onConnection";
-import { User } from "../types/types.types";
+import { TemporaryPlayer, User } from "../types/types.types";
 import { getUsersArray } from "./getUsersArray";
 
 export const getPlayersFromTournamentById = (tournamentId: string): User[] => {
@@ -13,8 +13,10 @@ export const getPlayersFromTournamentById = (tournamentId: string): User[] => {
 
   const usernamesInTournament = tournamentWithParticipants.playersUsernames;
 
-  const playersInTournament = getUsersArray(activeUsers).filter((player) =>
-    usernamesInTournament.includes(player.username)
+  const playersInTournament = getUsersArray(activeUsers).filter(
+    (player) =>
+      usernamesInTournament.includes(player.username) &&
+      player.id !== TemporaryPlayer.ID
   );
 
   return playersInTournament;

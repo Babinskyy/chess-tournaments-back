@@ -21,9 +21,12 @@ export const userReconnect = (
   const existingUser = findPlayerByUsername(username, allUsers);
   const temporaryPlayer = findTemporaryPlayerByUsername(username, allUsers);
 
-  if (existingUser && temporaryPlayer) {
+  if (
+    (existingUser && temporaryPlayer) ||
+    (existingUser && existingUser.status !== PlayerStatus.DISCONNECTED)
+  ) {
     const updatedUsers = new Set(
-      Array.from(activeUsers).map((user) =>
+      Array.from(allUsers).map((user) =>
         user.username === username ? existingUser : user
       )
     );
@@ -34,7 +37,7 @@ export const userReconnect = (
       id: socket.id,
       username: username,
       points: existingUser.points,
-      status: temporaryPlayer.status,
+      status: temporaryPlayer ? temporaryPlayer.status : PlayerStatus.NOT_STARTED,
       isAdmin: existingUser.isAdmin,
       isDeleted: false,
     };

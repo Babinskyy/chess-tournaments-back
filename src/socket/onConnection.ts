@@ -7,6 +7,7 @@ import { startGame } from "./startGame";
 import { addPoints } from "./addPoints";
 import { finishGame } from "./finishGame";
 import {
+  Colors,
   Game,
   PlayerStatus,
   TemporaryPlayer,
@@ -127,7 +128,15 @@ export const onConnection = (
 
   socket.on(
     SocketEvent.USER_LOGOUT,
-    ({ username, isPlayerWhite, room }): void => {
+    ({
+      username,
+      playerColor,
+      room,
+    }: {
+      username: string;
+      playerColor: Colors;
+      room: string;
+    }): void => {
       const existingUser = Array.from(activeUsers).find(
         (user) => user.username === username
       );
@@ -139,9 +148,10 @@ export const onConnection = (
       const finishedGame = activeGames.get(room);
 
       if (finishedGame) {
-        const winner = isPlayerWhite
-          ? finishedGame.playersUsernames[1]
-          : finishedGame.playersUsernames[0];
+        const winner =
+          playerColor === Colors.BLACK
+            ? finishedGame.playersUsernames[0]
+            : finishedGame.playersUsernames[1];
 
         activeUsers.forEach((user) => {
           if (
@@ -155,11 +165,10 @@ export const onConnection = (
 
         addPoints(activeUsers, winner, room, activeGames);
         socket.leave(room);
-        finishGame(
-          room,
-          !isPlayerWhite ? "white" : "black",
-          "opponent disconnect"
-        );
+
+        const result =
+          playerColor === Colors.WHITE ? Colors.BLACK : Colors.WHITE;
+        finishGame(room, result, "opponent disconnect");
         activeGames.delete(room);
       }
 
@@ -236,11 +245,6 @@ export const onConnection = (
       startStatusChecking(existingUser.username);
     }
 
-    if (tournament) {
-      if (!tournament.playersUsernames) {
-        activeTournaments.delete(tournament);
-      }
-    }
     if (existingUser) {
       const tournamentId = findTournamentByUsername(existingUser.username)?.id;
       if (tournamentId) {
