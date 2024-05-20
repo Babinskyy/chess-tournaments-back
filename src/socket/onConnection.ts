@@ -28,6 +28,7 @@ import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentB
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
 export const allUsers: Set<User> = new Set();
+export const userSockets = new Map();
 export const activeGames: Map<string, Game> = new Map();
 export const finishedGames: Map<string, Game> = new Map();
 export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
@@ -47,14 +48,28 @@ export const onConnection = (
       }: { username: string; id: string; tournamentId: string },
       callback: Function
     ) => {
-      socket.join(tournamentId);
+      const isTournamentExist = !!findTournamentByTournamentId(tournamentId);
+
+      if (!isTournamentExist) {
+        callback({
+          success: false,
+          message: "Tournament does not exist",
+          cause: "tournament",
+        });
+        return;
+      }
+
       const isUsernameTaken = Array.from(allUsers).some(
         (existingUser) =>
           existingUser.username.toLowerCase() === username.toLowerCase()
       );
 
       if (isUsernameTaken) {
-        callback({ success: false, message: "Username taken" });
+        callback({
+          success: false,
+          message: "Username taken",
+          cause: "username",
+        });
       } else {
         const tournament = findTournamentByTournamentId(tournamentId);
         const isAdmin = !tournament?.playersUsernames.length;
@@ -76,6 +91,8 @@ export const onConnection = (
         };
 
         activeUsers.add(newUser);
+        socket.join(tournamentId);
+        userSockets.set(newPlayerId, socket);
 
         const newUserCopy = structuredClone(newUser);
         allUsers.add(newUserCopy);
@@ -96,6 +113,7 @@ export const onConnection = (
       if (tournament) {
         callback(tournament.name);
       }
+
       io.to(tournamentId).emit(
         SocketEvent.USERS_LIST_UPDATE,
         getPlayersFromTournamentById(tournamentId)
@@ -346,15 +364,37 @@ export const onConnection = (
     }
   });
 
-  socket.on(SocketEvent.CREATE_TOURNAMENT, (tournament: Tournament) => {
-    socket.join(tournament.id);
-    activeTournaments.add({
-      id: tournament.id,
-      name: tournament.name,
-      playersUsernames: [],
-      active: false,
-    });
-  });
+  socket.on(
+    SocketEvent.CREATE_TOURNAMENT,
+    (
+      { name, id, username }: { name: string; id: string; username: string },
+      callback: Function
+    ) => {
+      const isTournamentNameTaken = Array.from(activeTournaments).some(
+        (tournament) => tournament.name.toLowerCase() === name.toLowerCase()
+      );
+
+      const isUsernameTaken = Array.from(allUsers).some(
+        (existingUser) =>
+          existingUser &&
+          existingUser.username.toLowerCase() === username.toLowerCase()
+      );
+
+      if (isTournamentNameTaken) {
+        callback({ username: false, tournamentName: true });
+      } else if (isUsernameTaken) {
+        callback({ username: true, tournamentName: false });
+      } else {
+        activeTournaments.add({
+          id: id,
+          name: name,
+          playersUsernames: [],
+          active: false,
+        });
+        callback({ username: false, tournamentName: false });
+      }
+    }
+  );
 
   socket.on(
     SocketEvent.ENTER_TOURNAMENT,
@@ -490,6 +530,65 @@ export const onConnection = (
       const tournamentName = findTournamentByUsername(playerUsername)?.name;
       if (tournamentName) {
         callback(tournamentName);
+      }
+    }
+  );
+
+  socket.on(SocketEvent.DELETE_TOURNAMENT, (tournamentId: string) => {
+    const tournamentToBeDeleted = findTournamentByTournamentId(tournamentId);
+
+    if (tournamentToBeDeleted) {
+      io.to(tournamentId).emit(SocketEvent.TOURNAMENT_DELETED);
+
+      activeUsers.forEach((player) => {
+        if (tournamentToBeDeleted.playersUsernames.includes(player.username)) {
+          activeUsers.delete(player);
+        }
+      });
+      allUsers.forEach((player) => {
+        if (tournamentToBeDeleted.playersUsernames.includes(player.username)) {
+          userSockets.delete(player.id);
+          allUsers.delete(player);
+        }
+      });
+
+      activeTournaments.delete(tournamentToBeDeleted);
+    }
+  });
+
+  socket.on(
+    SocketEvent.LEAVE_TOURNAMENT,
+    ({
+      tournamentId,
+      username,
+    }: {
+      tournamentId: string;
+      username: string;
+    }) => {
+      const tournament = findTournamentByTournamentId(tournamentId);
+
+      if (tournament) {
+        activeUsers.forEach((player) => {
+          if (player.username === username) {
+            activeUsers.delete(player);
+          }
+        });
+
+        allUsers.forEach((player) => {
+          if (player.username === username) {
+            userSockets.delete(player.id);
+            allUsers.delete(player);
+          }
+        });
+
+        tournament.playersUsernames = tournament.playersUsernames.filter(
+          (playerUsername) => playerUsername !== username
+        );
+
+        io.to(tournamentId).emit(
+          SocketEvent.USERS_LIST_UPDATE,
+          getPlayersFromTournamentById(tournamentId)
+        );
       }
     }
   );

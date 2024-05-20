@@ -27,6 +27,9 @@ export enum SocketEvent {
   TOURNAMENT_STARTED = "tournament-started",
   GET_TOURNAMENT_INFO = "get-tournament-info",
   CHECK_STATUS = "check-status",
+  DELETE_TOURNAMENT = "delete-tournament",
+  TOURNAMENT_DELETED = "tournament-deleted",
+  LEAVE_TOURNAMENT = "leave-tournament",
 }
 
 export enum PlayerStatus {
