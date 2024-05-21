@@ -612,17 +612,19 @@ export const onConnection = (
       if (tournament) {
         if (tournament.active) {
           if (isPlayerInTournament) {
-            callback({ active: true, player: true });
+            callback({ tournament: true, active: true, player: true });
           } else {
-            callback({ active: true, player: false });
+            callback({ tournament: true ,active: true, player: false });
           }
         } else {
           if (isPlayerInTournament) {
-            callback({ active: false, player: true });
+            callback({ tournament: true, active: false, player: true });
           } else {
-            callback({ active: false, player: false });
+            callback({ tournament: true, active: false, player: false });
           }
         }
+      } else {
+        callback({ tournament: false });
       }
     }
   );
