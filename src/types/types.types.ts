@@ -30,6 +30,7 @@ export enum SocketEvent {
   DELETE_TOURNAMENT = "delete-tournament",
   TOURNAMENT_DELETED = "tournament-deleted",
   LEAVE_TOURNAMENT = "leave-tournament",
+  CHECK_TOURNAMENT = "check-tournament",
 }
 
 export enum PlayerStatus {

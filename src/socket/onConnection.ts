@@ -25,6 +25,7 @@ import { startStatusChecking } from "./startStatusChecking";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
+import { getPlayersFromTournamentByUsername } from "../utils/getPlayersFromTournamentByUsername";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
@@ -112,7 +113,11 @@ export const onConnection = (
     (tournamentId: string, callback: Function) => {
       const tournament = findTournamentByTournamentId(tournamentId);
       if (tournament) {
-        callback(tournament.name);
+        if(tournament.active){
+          callback({isActive: true, tournamentName: tournament.name});
+        } else {
+          callback({isActive: false, tournamentName: tournament.name});
+        }
       }
 
       io.to(tournamentId).emit(
@@ -593,6 +598,31 @@ export const onConnection = (
           SocketEvent.USERS_LIST_UPDATE,
           getPlayersFromTournamentById(tournamentId)
         );
+      }
+    }
+  );
+
+  socket.on(
+    SocketEvent.CHECK_TOURNAMENT,
+    (username: string, callback: Function) => {
+      const tournament = findTournamentByUsername(username);
+      const isPlayerInTournament =
+        tournament?.playersUsernames.includes(username);
+
+      if (tournament) {
+        if (tournament.active) {
+          if (isPlayerInTournament) {
+            callback({ active: true, player: true });
+          } else {
+            callback({ active: true, player: false });
+          }
+        } else {
+          if (isPlayerInTournament) {
+            callback({ active: false, player: true });
+          } else {
+            callback({ active: false, player: false });
+          }
+        }
       }
     }
   );
