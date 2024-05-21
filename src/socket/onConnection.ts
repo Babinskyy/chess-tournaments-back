@@ -113,10 +113,10 @@ export const onConnection = (
     (tournamentId: string, callback: Function) => {
       const tournament = findTournamentByTournamentId(tournamentId);
       if (tournament) {
-        if(tournament.active){
-          callback({isActive: true, tournamentName: tournament.name});
+        if (tournament.active) {
+          callback({ isActive: true, tournamentName: tournament.name });
         } else {
-          callback({isActive: false, tournamentName: tournament.name});
+          callback({ isActive: false, tournamentName: tournament.name });
         }
       }
 
@@ -177,12 +177,34 @@ export const onConnection = (
         activeGames.delete(room);
       }
 
-      const tournamentId = findTournamentByUsername(username)?.id;
-      if (tournamentId) {
-        io.to(tournamentId).emit(
-          SocketEvent.USERS_LIST_UPDATE,
-          getPlayersFromTournamentById(tournamentId)
+      const tournament = findTournamentByUsername(username);
+      if (tournament?.id) {
+        const playersInTournament = getPlayersFromTournamentById(
+          tournament?.id
         );
+
+        const isAnyPlayerActive = Array.from(playersInTournament).some(
+          (player) => player.isDeleted === false
+        );
+
+        if (isAnyPlayerActive) {
+          io.to(tournament?.id).emit(
+            SocketEvent.USERS_LIST_UPDATE,
+            playersInTournament
+          );
+        } else {
+          activeUsers.forEach((player) => {
+            if (tournament.playersUsernames.includes(player.username)) {
+              activeUsers.delete(player);
+            }
+          });
+          allUsers.forEach((player) => {
+            if (tournament.playersUsernames.includes(player.username)) {
+              allUsers.delete(player);
+            }
+          });
+          activeTournaments.delete(tournament);
+        }
       }
     }
   );
@@ -614,7 +636,7 @@ export const onConnection = (
           if (isPlayerInTournament) {
             callback({ tournament: true, active: true, player: true });
           } else {
-            callback({ tournament: true ,active: true, player: false });
+            callback({ tournament: true, active: true, player: false });
           }
         } else {
           if (isPlayerInTournament) {

@@ -6,6 +6,7 @@ import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { finishGame } from "./finishGame";
 import {
   activeGames,
+  activeTournaments,
   activeUsers,
   allUsers,
   disconnectTimeouts,
@@ -63,13 +64,36 @@ export const startStatusChecking = (playerUsername: string) => {
             "opponent disconnect"
           );
         }
-        const tournamentId = findTournamentByUsername(playerUsername)?.id;
 
-        if (tournamentId) {
-          io.to(tournamentId).emit(
-            SocketEvent.USERS_LIST_UPDATE,
-            getPlayersFromTournamentById(tournamentId)
+        const tournament = findTournamentByUsername(playerUsername);
+
+        if (tournament?.id) {
+          const playersInTournament = getPlayersFromTournamentById(
+            tournament?.id
           );
+
+          const isAnyPlayerActive = Array.from(playersInTournament).some(
+            (player) => player.isDeleted === false
+          );
+
+          if (isAnyPlayerActive) {
+            io.to(tournament?.id).emit(
+              SocketEvent.USERS_LIST_UPDATE,
+              playersInTournament
+            );
+          } else {
+            activeUsers.forEach((player) => {
+              if (tournament.playersUsernames.includes(player.username)) {
+                activeUsers.delete(player);
+              }
+            });
+            allUsers.forEach((player) => {
+              if (tournament.playersUsernames.includes(player.username)) {
+                allUsers.delete(player);
+              }
+            });
+            activeTournaments.delete(tournament);
+          }
         }
       }
     } catch (error) {
