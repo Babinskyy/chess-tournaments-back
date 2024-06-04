@@ -25,7 +25,6 @@ import { startStatusChecking } from "./startStatusChecking";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
-import { getPlayersFromTournamentByUsername } from "../utils/getPlayersFromTournamentByUsername";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activeUsers: Set<User> = new Set();
@@ -34,11 +33,16 @@ export const userSockets = new Map();
 export const activeGames: Map<string, Game> = new Map();
 export const finishedGames: Map<string, Game> = new Map();
 export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
+export let adminManager: string = "";
 
 export const onConnection = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
-  socket.emit(SocketEvent.USER_ID, socket.id);
+  socket.emit(SocketEvent.USER_ID, socket.id, (isAdmin: boolean) => {
+    if (isAdmin) {
+      adminManager = socket.id;
+    }
+  });
 
   socket.on(
     SocketEvent.USER_LOGIN,
@@ -105,6 +109,10 @@ export const onConnection = (
           user: newUser,
         });
       }
+      io.to(adminManager).emit(
+        SocketEvent.UPDATE_TOURNAMENTS,
+        Array.from(activeTournaments)
+      );
     }
   );
 
@@ -206,6 +214,10 @@ export const onConnection = (
           activeTournaments.delete(tournament);
         }
       }
+      io.to(adminManager).emit(
+        SocketEvent.UPDATE_TOURNAMENTS,
+        Array.from(activeTournaments)
+      );
     }
   );
 
@@ -281,6 +293,11 @@ export const onConnection = (
         );
       }
     }
+
+    io.to(adminManager).emit(
+      SocketEvent.UPDATE_TOURNAMENTS,
+      Array.from(activeTournaments)
+    );
   });
 
   socket.on(SocketEvent.MOVE, (move, game) => {
@@ -346,6 +363,10 @@ export const onConnection = (
         io.to(game!).emit(SocketEvent.PLAYER_JOIN, playersUsernames);
       }
     }
+    io.to(adminManager).emit(
+      SocketEvent.UPDATE_TOURNAMENTS,
+      Array.from(activeTournaments)
+    );
   });
 
   socket.on(
@@ -393,6 +414,10 @@ export const onConnection = (
       finishGame(room, result, reason);
       activeGames.delete(room);
     }
+    io.to(adminManager).emit(
+      SocketEvent.UPDATE_TOURNAMENTS,
+      Array.from(activeTournaments)
+    );
   });
 
   socket.on(
@@ -424,6 +449,11 @@ export const onConnection = (
         });
         callback({ username: false, tournamentName: false });
       }
+
+      io.to(adminManager).emit(
+        SocketEvent.UPDATE_TOURNAMENTS,
+        Array.from(activeTournaments)
+      );
     }
   );
 
@@ -443,6 +473,10 @@ export const onConnection = (
           isTournamentActive: false,
         });
       }
+      io.to(adminManager).emit(
+        SocketEvent.UPDATE_TOURNAMENTS,
+        Array.from(activeTournaments)
+      );
     }
   );
 
@@ -452,6 +486,10 @@ export const onConnection = (
       tournamentToBeStarted.active = true;
     }
     io.to(tournamentId).emit(SocketEvent.TOURNAMENT_STARTED, tournamentId);
+    io.to(adminManager).emit(
+      SocketEvent.UPDATE_TOURNAMENTS,
+      Array.from(activeTournaments)
+    );
   });
 
   socket.on(
@@ -585,6 +623,10 @@ export const onConnection = (
 
       activeTournaments.delete(tournamentToBeDeleted);
     }
+    io.to(adminManager).emit(
+      SocketEvent.UPDATE_TOURNAMENTS,
+      Array.from(activeTournaments)
+    );
   });
 
   socket.on(
@@ -621,6 +663,10 @@ export const onConnection = (
           getPlayersFromTournamentById(tournamentId)
         );
       }
+      io.to(adminManager).emit(
+        SocketEvent.UPDATE_TOURNAMENTS,
+        Array.from(activeTournaments)
+      );
     }
   );
 
@@ -650,4 +696,8 @@ export const onConnection = (
       }
     }
   );
+
+  socket.on(SocketEvent.GET_TOURNAMENTS, (callback: Function) => {
+    callback(Array.from(activeTournaments));
+  });
 };
