@@ -10,7 +10,7 @@ import { onConnection } from "./src/socket/onConnection";
 dotenv.config();
 
 export const app: Application = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
