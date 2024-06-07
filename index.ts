@@ -34,6 +34,6 @@ app.get("/", (_req: Request, res: Response) => {
 
 app.use("/url", UrlRouter);
 
-server.listen(port, () => {
+server.listen(process.env.PORT, () => {
   console.log(`Server is Fire at http://localhost:${port}`);
 });
