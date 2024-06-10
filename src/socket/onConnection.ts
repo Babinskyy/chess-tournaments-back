@@ -12,7 +12,7 @@ import {
   PlayerStatus,
   TemporaryPlayer,
   Tournament,
-  User,
+  Player,
 } from "../types/types.types";
 import { startCountdown } from "./startCountdown";
 import { INITIAL_FEN, INITIAL_MINUTES } from "../constansts/constants";
@@ -25,10 +25,12 @@ import { startStatusChecking } from "./startStatusChecking";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
+import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
+import { updatePlayerStatus } from "../utils/updatePlayerStatus";
 
 export const activeTournaments: Set<Tournament> = new Set();
-export const activeUsers: Set<User> = new Set();
-export const allUsers: Set<User> = new Set();
+export const activePlayers: Set<Player> = new Set();
+export const allPlayers: Set<Player> = new Set();
 export const userSockets = new Map();
 export const activeGames: Map<string, Game> = new Map();
 export const finishedGames: Map<string, Game> = new Map();
@@ -65,7 +67,7 @@ export const onConnection = (
         return;
       }
 
-      const isUsernameTaken = Array.from(allUsers).some(
+      const isUsernameTaken = Array.from(allPlayers).some(
         (existingUser) =>
           existingUser.username.toLowerCase() === username.toLowerCase()
       );
@@ -78,16 +80,9 @@ export const onConnection = (
         });
       } else {
         const tournament = findTournamentByTournamentId(tournamentId);
-        const isAdmin = !tournament?.playersUsernames.length;
+        const isAdmin = !tournament?.players.length;
 
-        if (tournament) {
-          tournament.playersUsernames = [
-            ...tournament?.playersUsernames,
-            username,
-          ];
-        }
-
-        const newUser = {
+        const newPlayer = {
           id: newPlayerId,
           username: username,
           points: 0,
@@ -96,17 +91,21 @@ export const onConnection = (
           isDeleted: false,
         };
 
-        activeUsers.add(newUser);
+        if (tournament) {
+          tournament.players = [...tournament?.players, newPlayer];
+        }
+
+        activePlayers.add(newPlayer);
         socket.join(tournamentId);
         userSockets.set(newPlayerId, socket);
 
-        const newUserCopy = structuredClone(newUser);
-        allUsers.add(newUserCopy);
+        const newUserCopy = structuredClone(newPlayer);
+        allPlayers.add(newUserCopy);
 
         callback({
           success: true,
-          message: `User added successfully`,
-          user: newUser,
+          message: `Player added successfully`,
+          user: newPlayer,
         });
       }
       io.to(adminManager).emit(
@@ -150,7 +149,7 @@ export const onConnection = (
       playerColor: Colors;
       room: string;
     }): void => {
-      const existingUser = Array.from(activeUsers).find(
+      const existingUser = Array.from(activePlayers).find(
         (user) => user.username === username
       );
 
@@ -158,34 +157,42 @@ export const onConnection = (
         existingUser.isDeleted = true;
       }
 
-      const finishedGame = activeGames.get(room);
+      if (existingUser?.status !== PlayerStatus.SPECTATOR) {
+        const finishedGame = activeGames.get(room);
 
-      if (finishedGame) {
-        const winner =
-          playerColor === Colors.BLACK
-            ? finishedGame.playersUsernames[0]
-            : finishedGame.playersUsernames[1];
+        if (finishedGame) {
+          const winner =
+            playerColor === Colors.BLACK
+              ? finishedGame.playersUsernames[0]
+              : finishedGame.playersUsernames[1];
 
-        activeUsers.forEach((user) => {
-          if (
-            user.username === finishedGame.playersUsernames[0] ||
-            user.username === finishedGame.playersUsernames[1] ||
-            finishedGame.spectators.includes(user.username)
-          ) {
-            user.status = PlayerStatus.NOT_STARTED;
+          const player0 = findPlayerByUsername(
+            finishedGame.playersUsernames[0],
+            activePlayers
+          );
+          const player1 = findPlayerByUsername(
+            finishedGame.playersUsernames[1],
+            activePlayers
+          );
+
+          if (player0 && player1) {
+            updatePlayerStatus(player0, PlayerStatus.NOT_STARTED);
+            updatePlayerStatus(player1, PlayerStatus.NOT_STARTED);
           }
-        });
 
-        addPoints(activeUsers, winner, room, activeGames);
-        socket.leave(room);
+          addPoints(activePlayers, winner, room, activeGames);
+          socket.leave(room);
 
-        const result =
-          playerColor === Colors.WHITE ? Colors.BLACK : Colors.WHITE;
-        finishGame(room, result, "opponent disconnect");
-        activeGames.delete(room);
+          const result =
+            playerColor === Colors.WHITE ? Colors.BLACK : Colors.WHITE;
+  
+          finishGame(room, result, "opponent disconnect");
+          activeGames.delete(room);
+        }
       }
 
       const tournament = findTournamentByUsername(username);
+
       if (tournament?.id) {
         const playersInTournament = getPlayersFromTournamentById(
           tournament?.id
@@ -201,14 +208,17 @@ export const onConnection = (
             playersInTournament
           );
         } else {
-          activeUsers.forEach((player) => {
-            if (tournament.playersUsernames.includes(player.username)) {
-              activeUsers.delete(player);
+          const tournamentPlayersUsernames =
+            getUsernamesFromTournament(tournament);
+
+          activePlayers.forEach((player) => {
+            if (tournamentPlayersUsernames.includes(player.username)) {
+              activePlayers.delete(player);
             }
           });
-          allUsers.forEach((player) => {
-            if (tournament.playersUsernames.includes(player.username)) {
-              allUsers.delete(player);
+          allPlayers.forEach((player) => {
+            if (tournamentPlayersUsernames.includes(player.username)) {
+              allPlayers.delete(player);
             }
           });
           activeTournaments.delete(tournament);
@@ -222,7 +232,7 @@ export const onConnection = (
   );
 
   socket.on(SocketEvent.DISCONNECT, (reason): void => {
-    const existingUser = Array.from(activeUsers).find(
+    const existingUser = Array.from(activePlayers).find(
       (user) => user.id === socket.id
     );
 
@@ -242,14 +252,11 @@ export const onConnection = (
           activeGame.spectators = activeGame.spectators.filter(
             (spectator) => spectator !== existingUser.username
           );
-          activeUsers.forEach((user) => {
-            if (user.username === existingUser.username) {
-              user.status = PlayerStatus.NOT_STARTED;
-            }
-          });
+
+          updatePlayerStatus(existingUser, PlayerStatus.NOT_STARTED);
           socket.leave(spectatorGame);
         } else {
-          existingUser.status = PlayerStatus.NOT_STARTED;
+          updatePlayerStatus(existingUser, PlayerStatus.NOT_STARTED);
           console.error(`Game with ID ${spectatorGame} not found.`);
         }
       }
@@ -258,15 +265,15 @@ export const onConnection = (
         const game = findGameByUsername(existingUser.username, activeGames);
         if (game) {
           activeGames.delete(game);
-          const player = getUserBySocket(socket.id, activeUsers);
+          const player = getUserBySocket(socket.id, activePlayers);
 
           if (player) {
-            player.status = PlayerStatus.NOT_STARTED;
+            updatePlayerStatus(player, PlayerStatus.NOT_STARTED);
           }
         }
       }
 
-      allUsers.add({
+      allPlayers.add({
         id: TemporaryPlayer.ID,
         username: existingUser.username,
         status: existingUser.status,
@@ -275,11 +282,7 @@ export const onConnection = (
         isDeleted: false,
       });
 
-      activeUsers.forEach((player) => {
-        if (player.username === existingUser.username) {
-          player.status = PlayerStatus.DISCONNECTED;
-        }
-      });
+      updatePlayerStatus(existingUser, PlayerStatus.DISCONNECTED);
 
       startStatusChecking(existingUser.username);
     }
@@ -332,25 +335,25 @@ export const onConnection = (
         clocks: [INITIAL_MINUTES * 60, INITIAL_MINUTES * 60],
         spectators: [],
       });
-      activeUsers.forEach((user) => {
-        if (user.username === player) {
-          user.status = PlayerStatus.WAITING;
-        }
-      });
+
+      const activePlayer = findPlayerByUsername(player, activePlayers);
+      if (activePlayer) {
+        updatePlayerStatus(activePlayer, PlayerStatus.WAITING);
+      }
     }
 
     if (playersUsernames) {
       playersUsernames.push(player);
       socket.join(game!);
       if (playersUsernames.length === 2) {
-        activeUsers.forEach((user) => {
-          if (user.username === playersUsernames![0]) {
-            user.status = PlayerStatus.IN_GAME;
-          }
-          if (user.username === playersUsernames![1]) {
-            user.status = PlayerStatus.IN_GAME;
-          }
-        });
+        const player0 = findPlayerByUsername(playersUsernames[0], activePlayers);
+        const player1 = findPlayerByUsername(playersUsernames[1], activePlayers);
+
+        if (player0 && player1) {
+          updatePlayerStatus(player0, PlayerStatus.IN_GAME);
+          updatePlayerStatus(player1, PlayerStatus.IN_GAME);
+        }
+
         startCountdown(game, activeGames);
       }
 
@@ -398,19 +401,21 @@ export const onConnection = (
           ? ""
           : "draw";
 
-      activeUsers.forEach((user) => {
-        if (
-          user.username === finishedGame.playersUsernames[0] ||
-          user.username === finishedGame.playersUsernames[1] ||
-          finishedGame.spectators.includes(user.username)
-        ) {
-          if (user.status !== PlayerStatus.DISCONNECTED) {
-            user.status = PlayerStatus.NOT_STARTED;
-          }
-        }
-      });
+      const player0 = findPlayerByUsername(
+        finishedGame.playersUsernames[0],
+        activePlayers
+      );
+      const player1 = findPlayerByUsername(
+        finishedGame.playersUsernames[1],
+        activePlayers
+      );
 
-      addPoints(activeUsers, winner, room, activeGames);
+      if (player0 && player1) {
+        updatePlayerStatus(player0, PlayerStatus.IN_GAME);
+        updatePlayerStatus(player1, PlayerStatus.IN_GAME);
+      }
+
+      addPoints(activePlayers, winner, room, activeGames);
       finishGame(room, result, reason);
       activeGames.delete(room);
     }
@@ -430,7 +435,7 @@ export const onConnection = (
         (tournament) => tournament.name.toLowerCase() === name.toLowerCase()
       );
 
-      const isUsernameTaken = Array.from(allUsers).some(
+      const isUsernameTaken = Array.from(allPlayers).some(
         (existingUser) =>
           existingUser &&
           existingUser.username.toLowerCase() === username.toLowerCase()
@@ -444,7 +449,7 @@ export const onConnection = (
         activeTournaments.add({
           id: id,
           name: name,
-          playersUsernames: [],
+          players: [],
           active: false,
         });
         callback({ username: false, tournamentName: false });
@@ -516,11 +521,14 @@ export const onConnection = (
         }
       }
 
-      activeUsers.forEach((user) => {
-        if (user.username === selectingPlayer) {
-          user.status = PlayerStatus.SPECTATOR;
-        }
-      });
+      const playerToChangeStatus = findPlayerByUsername(
+        selectingPlayer,
+        activePlayers
+      );
+
+      if (playerToChangeStatus) {
+        updatePlayerStatus(playerToChangeStatus, PlayerStatus.SPECTATOR);
+      }
 
       const tournamentId = findTournamentByUsername(selectingPlayer)?.id;
       if (tournamentId) {
@@ -544,11 +552,12 @@ export const onConnection = (
         activeGame.spectators = activeGame?.spectators.filter(
           (spectator) => spectator !== player
         );
-        activeUsers.forEach((user) => {
-          if (user.username === player) {
-            user.status = PlayerStatus.NOT_STARTED;
-          }
-        });
+
+        const playerToChangeStatus = findPlayerByUsername(player, activePlayers);
+
+        if (playerToChangeStatus) {
+          updatePlayerStatus(playerToChangeStatus, PlayerStatus.NOT_STARTED);
+        }
         socket.leave(game);
 
         const tournamentId = findTournamentByUsername(player)?.id;
@@ -566,10 +575,10 @@ export const onConnection = (
 
   socket.on(SocketEvent.CANCEL_GAME_SEARCH, (room: string) => {
     activeGames.delete(room);
-    const player = getUserBySocket(socket.id, activeUsers);
+    const player = getUserBySocket(socket.id, activePlayers);
 
     if (player) {
-      player.status = PlayerStatus.NOT_STARTED;
+      updatePlayerStatus(player, PlayerStatus.NOT_STARTED);
       const tournamentId = findTournamentByUsername(player.username)?.id;
       if (tournamentId) {
         io.to(tournamentId).emit(
@@ -583,7 +592,7 @@ export const onConnection = (
   socket.on(
     SocketEvent.CHECK_PLAYER,
     (username: string, callback: Function) => {
-      const player = findPlayerByUsername(username, allUsers);
+      const player = findPlayerByUsername(username, allPlayers);
 
       if (!player?.isDeleted) {
         callback(true);
@@ -608,16 +617,19 @@ export const onConnection = (
 
     if (tournamentToBeDeleted) {
       io.to(tournamentId).emit(SocketEvent.TOURNAMENT_DELETED);
+      const tournamentPlayersUsernames = getUsernamesFromTournament(
+        tournamentToBeDeleted
+      );
 
-      activeUsers.forEach((player) => {
-        if (tournamentToBeDeleted.playersUsernames.includes(player.username)) {
-          activeUsers.delete(player);
+      activePlayers.forEach((player) => {
+        if (tournamentPlayersUsernames.includes(player.username)) {
+          activePlayers.delete(player);
         }
       });
-      allUsers.forEach((player) => {
-        if (tournamentToBeDeleted.playersUsernames.includes(player.username)) {
+      allPlayers.forEach((player) => {
+        if (tournamentPlayersUsernames.includes(player.username)) {
           userSockets.delete(player.id);
-          allUsers.delete(player);
+          allPlayers.delete(player);
         }
       });
 
@@ -641,21 +653,21 @@ export const onConnection = (
       const tournament = findTournamentByTournamentId(tournamentId);
 
       if (tournament) {
-        activeUsers.forEach((player) => {
+        activePlayers.forEach((player) => {
           if (player.username === username) {
-            activeUsers.delete(player);
+            activePlayers.delete(player);
           }
         });
 
-        allUsers.forEach((player) => {
+        allPlayers.forEach((player) => {
           if (player.username === username) {
             userSockets.delete(player.id);
-            allUsers.delete(player);
+            allPlayers.delete(player);
           }
         });
 
-        tournament.playersUsernames = tournament.playersUsernames.filter(
-          (playerUsername) => playerUsername !== username
+        tournament.players = tournament.players.filter(
+          (player) => player.username !== username
         );
 
         io.to(tournamentId).emit(
@@ -674,25 +686,31 @@ export const onConnection = (
     SocketEvent.CHECK_TOURNAMENT,
     (username: string, callback: Function) => {
       const tournament = findTournamentByUsername(username);
-      const isPlayerInTournament =
-        tournament?.playersUsernames.includes(username);
 
       if (tournament) {
-        if (tournament.active) {
-          if (isPlayerInTournament) {
-            callback({ tournament: true, active: true, player: true });
+        const tournamentPlayersUsernames =
+          getUsernamesFromTournament(tournament);
+
+        const isPlayerInTournament =
+          tournamentPlayersUsernames?.includes(username);
+
+        if (tournament) {
+          if (tournament.active) {
+            if (isPlayerInTournament) {
+              callback({ tournament: true, active: true, player: true });
+            } else {
+              callback({ tournament: true, active: true, player: false });
+            }
           } else {
-            callback({ tournament: true, active: true, player: false });
+            if (isPlayerInTournament) {
+              callback({ tournament: true, active: false, player: true });
+            } else {
+              callback({ tournament: true, active: false, player: false });
+            }
           }
         } else {
-          if (isPlayerInTournament) {
-            callback({ tournament: true, active: false, player: true });
-          } else {
-            callback({ tournament: true, active: false, player: false });
-          }
+          callback({ tournament: false });
         }
-      } else {
-        callback({ tournament: false });
       }
     }
   );

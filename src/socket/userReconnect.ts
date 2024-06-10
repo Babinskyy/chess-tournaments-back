@@ -4,36 +4,37 @@ import { findGameByUsername } from "../utils/findGameByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import {
   activeGames,
-  activeUsers,
-  allUsers,
+  activePlayers,
+  allPlayers,
   disconnectTimeouts,
 } from "./onConnection";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
-import { PlayerStatus, SocketEvent, User } from "../types/types.types";
+import { PlayerStatus, SocketEvent, Player } from "../types/types.types";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { io } from "../..";
+import { updatePlayerStatus } from "../utils/updatePlayerStatus";
 
 export const userReconnect = (
   username: string,
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
-  const existingUser = findPlayerByUsername(username, allUsers);
-  const temporaryPlayer = findTemporaryPlayerByUsername(username, allUsers);
+  const existingUser = findPlayerByUsername(username, allPlayers);
+  const temporaryPlayer = findTemporaryPlayerByUsername(username, allPlayers);
 
   if (
     (existingUser && temporaryPlayer) ||
     (existingUser && existingUser.status !== PlayerStatus.DISCONNECTED)
   ) {
     const updatedUsers = new Set(
-      Array.from(allUsers).map((user) =>
+      Array.from(allPlayers).map((user) =>
         user.username === username ? existingUser : user
       )
     );
 
     updatedUsers.delete(existingUser);
 
-    const newUser: User = {
+    const newUser: Player = {
       id: socket.id,
       username: username,
       points: existingUser.points,
@@ -44,13 +45,13 @@ export const userReconnect = (
 
     updatedUsers.add(newUser);
 
-    activeUsers.clear();
-    allUsers.clear();
-    updatedUsers.forEach((user) => activeUsers.add(user));
-    updatedUsers.forEach((user) => allUsers.add(user));
+    activePlayers.clear();
+    allPlayers.clear();
+    updatedUsers.forEach((user) => activePlayers.add(user));
+    updatedUsers.forEach((user) => allPlayers.add(user));
 
     const activeGameId = findGameByUsername(username, activeGames);
-    let playerInfo = findPlayerByUsername(username, allUsers);
+    let playerInfo = findPlayerByUsername(username, allPlayers);
 
     if (activeGameId) {
       socket.join(activeGameId);
@@ -66,9 +67,9 @@ export const userReconnect = (
         clocks,
       });
     } else {
-      const player = findPlayerByUsername(username, activeUsers);
+      const player = findPlayerByUsername(username, activePlayers);
       if (player && playerInfo) {
-        player.status = PlayerStatus.NOT_STARTED;
+        updatePlayerStatus(player, PlayerStatus.NOT_STARTED)
         playerInfo.status = PlayerStatus.NOT_STARTED;
       }
 
@@ -80,7 +81,7 @@ export const userReconnect = (
     const tournament = findTournamentByUsername(existingUser.username);
     if (!tournament?.active) {
       existingUser.isDeleted = false;
-      existingUser.status = PlayerStatus.NOT_STARTED;
+      updatePlayerStatus(existingUser, PlayerStatus.NOT_STARTED)
     }
   }
 

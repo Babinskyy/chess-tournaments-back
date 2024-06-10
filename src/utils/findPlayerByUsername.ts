@@ -1,8 +1,8 @@
-import { User } from '../types/types.types';
+import { Player } from '../types/types.types';
 
 export const findPlayerByUsername = (
   username: string,
-  users: Set<User>
-): User | undefined => {
+  users: Set<Player>
+): Player | undefined => {
   return Array.from(users).find((user) => user.username === username);
 };

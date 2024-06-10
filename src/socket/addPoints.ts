@@ -1,21 +1,21 @@
-import { User } from '../types/types.types';
+import { Player } from '../types/types.types';
 
 export const addPoints = (
-  activeUsers: Set<User>,
+  activePlayers: Set<Player>,
   winner: string,
   game: string,
   activeGames: Map<any, any>
 ) => {
   if (winner) {
     if (winner !== 'draw') {
-      activeUsers.forEach((user) => {
+      activePlayers.forEach((user) => {
         if (user.username === winner) {
           user.points = user.points + 1;
         }
       });
     } else {
       const players = activeGames.get(game).players;
-      activeUsers.forEach((user) => {
+      activePlayers.forEach((user) => {
         if (user.username === players[0]) {
           user.points = user.points + 0.5;
         }

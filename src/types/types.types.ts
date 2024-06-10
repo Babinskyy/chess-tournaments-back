@@ -43,7 +43,7 @@ export enum PlayerStatus {
   DISCONNECTED = "disconnected",
 }
 
-export type User = {
+export type Player = {
   id: string;
   username: string;
   points: number;
@@ -55,7 +55,7 @@ export type User = {
 export type Tournament = {
   id: string;
   name: string;
-  playersUsernames: string[];
+  players: Player[];
   active: boolean;
 };
 

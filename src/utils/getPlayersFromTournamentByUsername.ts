@@ -1,21 +1,22 @@
-import { activeTournaments, activeUsers } from "../socket/onConnection";
-import { User } from "../types/types.types";
+import { activeTournaments, activePlayers } from "../socket/onConnection";
+import { Player } from "../types/types.types";
 import { getUsersArray } from "./getUsersArray";
 
 export const getPlayersFromTournamentByUsername = (
   username: string
-): User[] => {
+): Player[] => {
   const tournamentWithParticipants = Array.from(activeTournaments).find(
-    (tournament) => tournament.playersUsernames.includes(username)
+    (tournament) =>
+      tournament.players.forEach((player) => player.username === username)
   );
 
   if (!tournamentWithParticipants) {
-    return []
+    return [];
   }
 
-  const usernamesInTournament = tournamentWithParticipants.playersUsernames;
+  const usernamesInTournament = tournamentWithParticipants.players.map((player) => player.username);
 
-  const playersInTournament = getUsersArray(activeUsers).filter((player) =>
+  const playersInTournament = getUsersArray(activePlayers).filter((player) =>
     usernamesInTournament.includes(player.username)
   );
 

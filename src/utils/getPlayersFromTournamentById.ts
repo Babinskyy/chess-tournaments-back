@@ -1,8 +1,11 @@
-import { activeTournaments, activeUsers } from "../socket/onConnection";
-import { TemporaryPlayer, User } from "../types/types.types";
+import { activeTournaments, activePlayers } from "../socket/onConnection";
+import { TemporaryPlayer, Player } from "../types/types.types";
+import { getUsernamesFromTournament } from "./getUsernamesFromTournament";
 import { getUsersArray } from "./getUsersArray";
 
-export const getPlayersFromTournamentById = (tournamentId: string): User[] => {
+export const getPlayersFromTournamentById = (
+  tournamentId: string
+): Player[] => {
   const tournamentWithParticipants = Array.from(activeTournaments).find(
     (tournament) => tournament.id === tournamentId
   );
@@ -11,9 +14,11 @@ export const getPlayersFromTournamentById = (tournamentId: string): User[] => {
     return [];
   }
 
-  const usernamesInTournament = tournamentWithParticipants.playersUsernames;
+  const usernamesInTournament = getUsernamesFromTournament(
+    tournamentWithParticipants
+  );
 
-  const playersInTournament = getUsersArray(activeUsers).filter(
+  const playersInTournament = getUsersArray(activePlayers).filter(
     (player) =>
       usernamesInTournament.includes(player.username) &&
       player.id !== TemporaryPlayer.ID

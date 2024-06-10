@@ -1,8 +1,8 @@
-import { User } from "../types/types.types";
+import { Player } from "../types/types.types";
 
 export const getUserBySocket = (
   socketId: string,
-  activeUsers: Set<User>
+  activePlayers: Set<Player>
 ) => {
-    return Array.from(activeUsers).find((u) => u.id === socketId);
+    return Array.from(activePlayers).find((u) => u.id === socketId);
 };

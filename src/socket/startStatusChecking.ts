@@ -7,23 +7,24 @@ import { finishGame } from "./finishGame";
 import {
   activeGames,
   activeTournaments,
-  activeUsers,
-  allUsers,
+  activePlayers,
+  allPlayers,
   disconnectTimeouts,
 } from "./onConnection";
 import { addPoints } from "./addPoints";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
+import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
 
 const USER_DELETION_TIME = 30000;
 
 export const startStatusChecking = (playerUsername: string) => {
   const disconnectTimeout = setTimeout(() => {
     try {
-      const player = findPlayerByUsername(playerUsername, activeUsers);
+      const player = findPlayerByUsername(playerUsername, activePlayers);
       const temporaryPlayer = findTemporaryPlayerByUsername(
         playerUsername,
-        allUsers
+        allPlayers
       );
       const game = findGameByUsername(playerUsername, activeGames);
 
@@ -31,19 +32,19 @@ export const startStatusChecking = (playerUsername: string) => {
         return;
       }
       if (player?.status === PlayerStatus.DISCONNECTED) {
-        activeUsers.forEach((user) => {
+        activePlayers.forEach((user) => {
           if (player === user) {
             user.isDeleted = true;
           }
         });
-        allUsers.forEach((user) => {
+        allPlayers.forEach((user) => {
           if (player === user) {
             user.isDeleted = true;
           }
         });
 
         if (temporaryPlayer) {
-          allUsers.delete(temporaryPlayer);
+          allPlayers.delete(temporaryPlayer);
         }
         if (game) {
           const isPlayerWhite =
@@ -56,7 +57,7 @@ export const startStatusChecking = (playerUsername: string) => {
               ? finishedGame.playersUsernames[1]
               : finishedGame.playersUsernames[0];
 
-            addPoints(activeUsers, winner, game, activeGames);
+            addPoints(activePlayers, winner, game, activeGames);
           }
           finishGame(
             game,
@@ -82,14 +83,17 @@ export const startStatusChecking = (playerUsername: string) => {
               playersInTournament
             );
           } else {
-            activeUsers.forEach((player) => {
-              if (tournament.playersUsernames.includes(player.username)) {
-                activeUsers.delete(player);
+            const usernamesInTournament =
+              getUsernamesFromTournament(tournament);
+              
+            activePlayers.forEach((player) => {
+              if (usernamesInTournament.includes(player.username)) {
+                activePlayers.delete(player);
               }
             });
-            allUsers.forEach((player) => {
-              if (tournament.playersUsernames.includes(player.username)) {
-                allUsers.delete(player);
+            allPlayers.forEach((player) => {
+              if (usernamesInTournament.includes(player.username)) {
+                allPlayers.delete(player);
               }
             });
             activeTournaments.delete(tournament);

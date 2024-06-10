@@ -1,4 +1,4 @@
-import { User } from '../types/types.types';
+import { Player } from '../types/types.types';
 
-export const getUsersArray = (activeUsers: Set<User>) =>
-  Array.from(activeUsers);
+export const getUsersArray = (activePlayers: Set<Player>) =>
+  Array.from(activePlayers);
