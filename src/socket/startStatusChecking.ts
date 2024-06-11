@@ -15,6 +15,7 @@ import { addPoints } from "./addPoints";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
+import { deletePlayer } from "../utils/deleteUser";
 
 const USER_DELETION_TIME = 30000;
 
@@ -34,7 +35,7 @@ export const startStatusChecking = (playerUsername: string) => {
       if (player?.status === PlayerStatus.DISCONNECTED) {
         activePlayers.forEach((user) => {
           if (player === user) {
-            user.isDeleted = true;
+            deletePlayer(user);
           }
         });
         allPlayers.forEach((user) => {
@@ -85,7 +86,7 @@ export const startStatusChecking = (playerUsername: string) => {
           } else {
             const usernamesInTournament =
               getUsernamesFromTournament(tournament);
-              
+
             activePlayers.forEach((player) => {
               if (usernamesInTournament.includes(player.username)) {
                 activePlayers.delete(player);

@@ -27,6 +27,7 @@ import { findTournamentByTournamentId } from "../utils/findTournamentByTournamen
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
 import { updatePlayerStatus } from "../utils/updatePlayerStatus";
+import { deletePlayer } from "../utils/deleteUser";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activePlayers: Set<Player> = new Set();
@@ -154,7 +155,7 @@ export const onConnection = (
       );
 
       if (existingUser) {
-        existingUser.isDeleted = true;
+        deletePlayer(existingUser);
       }
 
       if (existingUser?.status !== PlayerStatus.SPECTATOR) {
@@ -185,7 +186,7 @@ export const onConnection = (
 
           const result =
             playerColor === Colors.WHITE ? Colors.BLACK : Colors.WHITE;
-  
+
           finishGame(room, result, "opponent disconnect");
           activeGames.delete(room);
         }
@@ -315,13 +316,21 @@ export const onConnection = (
     let game: string | undefined;
     let playersUsernames: string[] | undefined;
 
+    const tournament1 = findTournamentByUsername(player);
+
     for (const [gameId, gameData] of activeGames) {
       if (gameData.playersUsernames.length < 2) {
-        game = gameId;
-        socket.emit(SocketEvent.SET_GAME, game);
-        playersUsernames = gameData.playersUsernames;
+        const tournament2 = findTournamentByUsername(
+          gameData.playersUsernames[0]
+        );
 
-        break;
+        if (tournament1?.id === tournament2?.id) {
+          game = gameId;
+          socket.emit(SocketEvent.SET_GAME, game);
+          playersUsernames = gameData.playersUsernames;
+
+          break;
+        }
       }
     }
 
@@ -346,8 +355,14 @@ export const onConnection = (
       playersUsernames.push(player);
       socket.join(game!);
       if (playersUsernames.length === 2) {
-        const player0 = findPlayerByUsername(playersUsernames[0], activePlayers);
-        const player1 = findPlayerByUsername(playersUsernames[1], activePlayers);
+        const player0 = findPlayerByUsername(
+          playersUsernames[0],
+          activePlayers
+        );
+        const player1 = findPlayerByUsername(
+          playersUsernames[1],
+          activePlayers
+        );
 
         if (player0 && player1) {
           updatePlayerStatus(player0, PlayerStatus.IN_GAME);
@@ -553,7 +568,10 @@ export const onConnection = (
           (spectator) => spectator !== player
         );
 
-        const playerToChangeStatus = findPlayerByUsername(player, activePlayers);
+        const playerToChangeStatus = findPlayerByUsername(
+          player,
+          activePlayers
+        );
 
         if (playerToChangeStatus) {
           updatePlayerStatus(playerToChangeStatus, PlayerStatus.NOT_STARTED);

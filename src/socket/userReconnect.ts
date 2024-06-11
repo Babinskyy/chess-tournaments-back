@@ -5,6 +5,8 @@ import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import {
   activeGames,
   activePlayers,
+  activeTournaments,
+  adminManager,
   allPlayers,
   disconnectTimeouts,
 } from "./onConnection";
@@ -34,16 +36,18 @@ export const userReconnect = (
 
     updatedUsers.delete(existingUser);
 
-    const newUser: Player = {
+    const newPlayer: Player = {
       id: socket.id,
       username: username,
       points: existingUser.points,
-      status: temporaryPlayer ? temporaryPlayer.status : PlayerStatus.NOT_STARTED,
+      status: temporaryPlayer
+        ? temporaryPlayer.status
+        : PlayerStatus.NOT_STARTED,
       isAdmin: existingUser.isAdmin,
       isDeleted: false,
     };
 
-    updatedUsers.add(newUser);
+    updatedUsers.add(newPlayer);
 
     activePlayers.clear();
     allPlayers.clear();
@@ -69,19 +73,20 @@ export const userReconnect = (
     } else {
       const player = findPlayerByUsername(username, activePlayers);
       if (player && playerInfo) {
-        updatePlayerStatus(player, PlayerStatus.NOT_STARTED)
+        updatePlayerStatus(player, PlayerStatus.NOT_STARTED);
         playerInfo.status = PlayerStatus.NOT_STARTED;
       }
 
       socket.emit(SocketEvent.RECOVER_PLAYER, playerInfo);
     }
 
-    clearTimeout(disconnectTimeouts.get(newUser.username));
+    clearTimeout(disconnectTimeouts.get(newPlayer.username));
   } else if (existingUser && !temporaryPlayer) {
     const tournament = findTournamentByUsername(existingUser.username);
+
     if (!tournament?.active) {
       existingUser.isDeleted = false;
-      updatePlayerStatus(existingUser, PlayerStatus.NOT_STARTED)
+      updatePlayerStatus(existingUser, PlayerStatus.NOT_STARTED);
     }
   }
 
@@ -91,6 +96,11 @@ export const userReconnect = (
     io.to(tournamentId).emit(
       SocketEvent.USERS_LIST_UPDATE,
       getPlayersFromTournamentById(tournamentId)
+    );
+
+    io.to(adminManager).emit(
+      SocketEvent.UPDATE_TOURNAMENTS,
+      Array.from(activeTournaments)
     );
   }
 };
