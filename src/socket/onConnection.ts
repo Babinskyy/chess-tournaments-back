@@ -688,6 +688,7 @@ export const onConnection = (
 
       activeTournaments.delete(tournamentToBeDeleted);
     }
+    
     io.to(adminManager).emit(
       SocketEvent.UPDATE_TOURNAMENTS,
       Array.from(activeTournaments)
