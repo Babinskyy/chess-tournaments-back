@@ -13,6 +13,7 @@ import {
   TemporaryPlayer,
   Tournament,
   Player,
+  TournamentTypes,
 } from "../types/types.types";
 import { startCountdown } from "./startCountdown";
 import { INITIAL_FEN, INITIAL_MINUTES } from "../constansts/constants";
@@ -122,9 +123,17 @@ export const onConnection = (
       const tournament = findTournamentByTournamentId(tournamentId);
       if (tournament) {
         if (tournament.active) {
-          callback({ isActive: true, tournamentName: tournament.name });
+          callback({
+            isActive: true,
+            tournamentName: tournament.name,
+            tournamentType: tournament.type,
+          });
         } else {
-          callback({ isActive: false, tournamentName: tournament.name });
+          callback({
+            isActive: false,
+            tournamentName: tournament.name,
+            tournamentType: tournament.type,
+          });
         }
       }
 
@@ -334,14 +343,14 @@ export const onConnection = (
       }
     }
 
-    if (!game) {
+    if (!game && tournament1) {
       game = v4();
       socket.emit(SocketEvent.SET_GAME, game);
       playersUsernames = [];
       activeGames.set(game, {
         fen: INITIAL_FEN,
         playersUsernames: playersUsernames,
-        clocks: [INITIAL_MINUTES * 60, INITIAL_MINUTES * 60],
+        clocks: [tournament1.time * 60, tournament1.time * 60],
         spectators: [],
       });
 
@@ -368,8 +377,9 @@ export const onConnection = (
           updatePlayerStatus(player0, PlayerStatus.IN_GAME);
           updatePlayerStatus(player1, PlayerStatus.IN_GAME);
         }
-
-        startCountdown(game, activeGames);
+        if (game) {
+          startCountdown(game, activeGames);
+        }
       }
 
       const tournamentId = findTournamentByUsername(player)?.id;
@@ -443,7 +453,21 @@ export const onConnection = (
   socket.on(
     SocketEvent.CREATE_TOURNAMENT,
     (
-      { name, id, username }: { name: string; id: string; username: string },
+      {
+        name,
+        id,
+        username,
+        time,
+        type,
+        win,
+      }: {
+        name: string;
+        id: string;
+        username: string;
+        time: string;
+        type: TournamentTypes;
+        win: string;
+      },
       callback: Function
     ) => {
       const isTournamentNameTaken = Array.from(activeTournaments).some(
@@ -466,6 +490,9 @@ export const onConnection = (
           name: name,
           players: [],
           active: false,
+          type: type,
+          time: Number(time),
+          win: Number(win),
         });
         callback({ username: false, tournamentName: false });
       }
@@ -553,6 +580,10 @@ export const onConnection = (
         );
       }
       callback(activeGame?.playersUsernames);
+      io.to(adminManager).emit(
+        SocketEvent.UPDATE_TOURNAMENTS,
+        Array.from(activeTournaments)
+      );
     }
   );
 
@@ -583,6 +614,10 @@ export const onConnection = (
           io.to(tournamentId).emit(
             SocketEvent.USERS_LIST_UPDATE,
             getPlayersFromTournamentById(tournamentId)
+          );
+          io.to(adminManager).emit(
+            SocketEvent.UPDATE_TOURNAMENTS,
+            Array.from(activeTournaments)
           );
         }
       } else {

@@ -57,6 +57,9 @@ export type Tournament = {
   name: string;
   players: Player[];
   active: boolean;
+  type: TournamentTypes;
+  time: number;
+  win: number;
 };
 
 export type Game = {
@@ -73,4 +76,9 @@ export enum TemporaryPlayer {
 export enum Colors {
   WHITE = "white",
   BLACK = "black",
+}
+
+export enum TournamentTypes {
+  FFA = "ffa",
+  SWISS = "swiss",
 }

@@ -16,6 +16,7 @@ import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { io } from "../..";
 import { updatePlayerStatus } from "../utils/updatePlayerStatus";
+import { replaceTournamentPlayer } from "../utils/replaceTournamentPlayer";
 
 export const userReconnect = (
   username: string,
@@ -23,6 +24,7 @@ export const userReconnect = (
 ) => {
   const existingUser = findPlayerByUsername(username, allPlayers);
   const temporaryPlayer = findTemporaryPlayerByUsername(username, allPlayers);
+  const tournamentId = findTournamentByUsername(username)?.id;
 
   if (
     (existingUser && temporaryPlayer) ||
@@ -53,6 +55,8 @@ export const userReconnect = (
     allPlayers.clear();
     updatedUsers.forEach((user) => activePlayers.add(user));
     updatedUsers.forEach((user) => allPlayers.add(user));
+
+    replaceTournamentPlayer(existingUser, newPlayer)
 
     const activeGameId = findGameByUsername(username, activeGames);
     let playerInfo = findPlayerByUsername(username, allPlayers);
@@ -90,17 +94,17 @@ export const userReconnect = (
     }
   }
 
-  const tournamentId = findTournamentByUsername(username)?.id;
+  
   if (tournamentId) {
     socket.join(tournamentId);
     io.to(tournamentId).emit(
       SocketEvent.USERS_LIST_UPDATE,
       getPlayersFromTournamentById(tournamentId)
     );
-
-    io.to(adminManager).emit(
-      SocketEvent.UPDATE_TOURNAMENTS,
-      Array.from(activeTournaments)
-    );
   }
+
+  io.to(adminManager).emit(
+    SocketEvent.UPDATE_TOURNAMENTS,
+    Array.from(activeTournaments)
+  );
 };
