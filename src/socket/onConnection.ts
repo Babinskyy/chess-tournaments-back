@@ -58,13 +58,22 @@ export const onConnection = (
       }: { username: string; id: string; tournamentId: string },
       callback: Function
     ) => {
-      const isTournamentExist = !!findTournamentByTournamentId(tournamentId);
+      const tournament = findTournamentByTournamentId(tournamentId);
 
-      if (!isTournamentExist) {
+      if (!tournament) {
         callback({
           success: false,
           message: "Tournament does not exist",
           cause: "tournament",
+        });
+        return;
+      }
+
+      if (tournament && tournament.active) {
+        callback({
+          success: false,
+          message: "Tournament already started.",
+          cause: "started",
         });
         return;
       }
@@ -513,7 +522,7 @@ export const onConnection = (
         callback({
           tournamentName: tournament.name,
           isTournamentActive: tournament.active,
-          timeControl: tournament.time
+          timeControl: tournament.time,
         });
       } else {
         callback({
@@ -689,7 +698,7 @@ export const onConnection = (
 
       activeTournaments.delete(tournamentToBeDeleted);
     }
-    
+
     io.to(adminManager).emit(
       SocketEvent.UPDATE_TOURNAMENTS,
       Array.from(activeTournaments)
@@ -773,4 +782,16 @@ export const onConnection = (
   socket.on(SocketEvent.GET_TOURNAMENTS, (callback: Function) => {
     callback(Array.from(activeTournaments));
   });
+
+  socket.on(
+    SocketEvent.CHECK_IS_PLAYER_IN_TOURNAMENT,
+    (playerUsername: string, callback: Function) => {
+      const tournament = findTournamentByUsername(playerUsername);
+      if (tournament) {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    }
+  );
 };

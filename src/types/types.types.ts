@@ -34,6 +34,7 @@ export enum SocketEvent {
   UPDATE_TOURNAMENTS = "update-tournaments",
   GET_TOURNAMENTS = "get-tournaments",
   FINISH_TOURNAMENT = "finish-tournament",
+  CHECK_IS_PLAYER_IN_TOURNAMENT = "check-is-player-in-tournament",
 }
 
 export enum PlayerStatus {
