@@ -513,6 +513,7 @@ export const onConnection = (
         callback({
           tournamentName: tournament.name,
           isTournamentActive: tournament.active,
+          timeControl: tournament.time
         });
       } else {
         callback({

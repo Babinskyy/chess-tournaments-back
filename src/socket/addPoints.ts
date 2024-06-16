@@ -35,7 +35,7 @@ export const addPoints = (
         if (tournament?.win && player.points >= tournament?.win) {
           io.to(tournament.id).emit(
             SocketEvent.FINISH_TOURNAMENT,
-            Array.from(tournament.players)
+            {players: Array.from(tournament.players), tournamentName: tournament.name}
           );
 
           const tournamentPlayersUsernames =
