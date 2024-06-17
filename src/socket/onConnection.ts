@@ -16,7 +16,10 @@ import {
   TournamentTypes,
 } from "../types/types.types";
 import { startCountdown } from "./startCountdown";
-import { INITIAL_FEN, INITIAL_MINUTES } from "../constansts/constants";
+import {
+  INITIAL_FEN,
+  MAX_PLAYERS_IN_TOURNAMENT,
+} from "../constansts/constants";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findGameBySpectator } from "../utils/findGameBySpectator";
 import { getUserBySocket } from "../utils/getUserBySocket";
@@ -59,6 +62,9 @@ export const onConnection = (
       callback: Function
     ) => {
       const tournament = findTournamentByTournamentId(tournamentId);
+      const activePlayersInTournament = getPlayersFromTournamentById(
+        tournamentId
+      ).filter((player) => player.isDeleted === false);
 
       if (!tournament) {
         callback({
@@ -66,6 +72,7 @@ export const onConnection = (
           message: "Tournament does not exist",
           cause: "tournament",
         });
+
         return;
       }
 
@@ -75,6 +82,17 @@ export const onConnection = (
           message: "Tournament already started.",
           cause: "started",
         });
+
+        return;
+      }
+
+      if (activePlayersInTournament.length >= MAX_PLAYERS_IN_TOURNAMENT) {
+        callback({
+          success: false,
+          message: "Max players in tournament limit.",
+          cause: "players-limit",
+        });
+
         return;
       }
 
@@ -136,12 +154,14 @@ export const onConnection = (
             isActive: true,
             tournamentName: tournament.name,
             tournamentType: tournament.type,
+            timeControl: tournament.time,
           });
         } else {
           callback({
             isActive: false,
             tournamentName: tournament.name,
             tournamentType: tournament.type,
+            timeControl: tournament.time,
           });
         }
       }
@@ -518,6 +538,7 @@ export const onConnection = (
     (tournamentId: string, callback: Function) => {
       const tournament = findTournamentByTournamentId(tournamentId);
       socket.join(tournamentId!);
+
       if (tournament) {
         callback({
           tournamentName: tournament.name,
