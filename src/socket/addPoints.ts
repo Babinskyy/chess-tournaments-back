@@ -1,14 +1,13 @@
 import { io } from "../..";
-import { Player, SocketEvent } from "../types/types.types";
+import { Game, SocketEvent } from "../types/types.types";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
-import { activeTournaments, allPlayers, userSockets } from "./onConnection";
+import { activePlayers, activeTournaments, allPlayers, userSockets } from "./onConnection";
 
 export const addPoints = (
-  activePlayers: Set<Player>,
   winner: string,
   game: string,
-  activeGames: Map<any, any>
+  activeGames: Map<string, Game>
 ) => {
   if (winner) {
     if (winner !== "draw") {
@@ -18,12 +17,12 @@ export const addPoints = (
         }
       });
     } else {
-      const players = activeGames.get(game).players;
+      const playersUsername = activeGames.get(game)?.playersUsernames;
       activePlayers.forEach((user) => {
-        if (user.username === players[0]) {
+        if (playersUsername && user.username === playersUsername[0]) {
           user.points = user.points + 0.5;
         }
-        if (user.username === players[1]) {
+        if (playersUsername && user.username === playersUsername[1]) {
           user.points = user.points + 0.5;
         }
       });
@@ -33,10 +32,10 @@ export const addPoints = (
       const tournament = findTournamentByUsername(player.username);
       if (tournament) {
         if (tournament?.win && player.points >= tournament?.win) {
-          io.to(tournament.id).emit(
-            SocketEvent.FINISH_TOURNAMENT,
-            {players: Array.from(tournament.players), tournamentName: tournament.name}
-          );
+          io.to(tournament.id).emit(SocketEvent.FINISH_TOURNAMENT, {
+            players: Array.from(tournament.players),
+            tournamentName: tournament.name,
+          });
 
           const tournamentPlayersUsernames =
             getUsernamesFromTournament(tournament);

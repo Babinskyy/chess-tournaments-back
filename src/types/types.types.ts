@@ -52,6 +52,7 @@ export type Player = {
   status: PlayerStatus;
   isAdmin: boolean;
   isDeleted: boolean;
+  playersPlayed: string[]
 };
 
 export type Tournament = {
@@ -62,6 +63,7 @@ export type Tournament = {
   type: TournamentTypes;
   time: number;
   win: number;
+  currentRound: number;
 };
 
 export type Game = {
@@ -83,4 +85,5 @@ export enum Colors {
 export enum TournamentTypes {
   FFA = "ffa",
   SWISS = "swiss",
+  BRACKETS = "brackets",
 }

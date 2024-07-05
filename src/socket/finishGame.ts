@@ -13,19 +13,47 @@ import { updatePlayerStatus } from "../utils/updatePlayerStatus";
 
 export const finishGame = (game: string, result: string, reason: string) => {
   let tempPlayer: Player | undefined;
-  activeGames.get(game)?.playersUsernames.forEach((playerUsername) => {
+  const gameDetails = activeGames.get(game);
+
+  if (!gameDetails) {
+    return;
+  }
+
+  const { playersUsernames, spectators } = gameDetails;
+
+  if (playersUsernames.length === 2) {
+    const [player1Username, player2Username] = playersUsernames;
+
+    const player1 = findPlayerByUsername(player1Username, allPlayers);
+    const player2 = findPlayerByUsername(player2Username, allPlayers);
+
+    if (result) {
+      if (player1 && player2) {
+        if (!player1.playersPlayed.includes(player2.username)) {
+          player1.playersPlayed.push(player2.username);
+        }
+        if (!player2.playersPlayed.includes(player1.username)) {
+          player2.playersPlayed.push(player1.username);
+        }
+      }
+    }
+  }
+
+  playersUsernames.forEach((playerUsername) => {
     const player = findPlayerByUsername(playerUsername, allPlayers);
     tempPlayer = player;
     if (player && player.status !== PlayerStatus.DISCONNECTED) {
       updatePlayerStatus(player, PlayerStatus.NOT_STARTED);
     }
   });
-  activeGames.get(game)?.spectators.forEach((spectator) => {
+
+  spectators.forEach((spectator) => {
     const player = findPlayerByUsername(spectator, allPlayers);
     if (player && player.status !== PlayerStatus.DISCONNECTED) {
       updatePlayerStatus(player, PlayerStatus.NOT_STARTED);
     }
   });
+
   activeGames.delete(game);
 
   io.to(game).emit(SocketEvent.FINISH_GAME, { result, reason });

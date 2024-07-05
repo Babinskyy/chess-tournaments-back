@@ -47,6 +47,7 @@ export const userReconnect = (
         : PlayerStatus.NOT_STARTED,
       isAdmin: existingUser.isAdmin,
       isDeleted: false,
+      playersPlayed: existingUser.playersPlayed
     };
 
     updatedUsers.add(newPlayer);
