@@ -1,6 +1,5 @@
 import { v4 } from "uuid";
 import { Player } from "../types/types.types";
-import { Swiss } from "tournament-pairings";
 
 export const generateSwissPairings = () => {
   const playersArr = [
