@@ -1,6 +1,7 @@
 import { io } from "../..";
 import {
   activeGames,
+  activePlayers,
   activeTournaments,
   adminManager,
   allPlayers,
@@ -68,8 +69,10 @@ export const finishGame = (game: string, result: string, reason: string) => {
     }
   }
 
-  io.to(adminManager).emit(
-    SocketEvent.UPDATE_TOURNAMENTS,
-    Array.from(activeTournaments)
-  );
+  io.to(adminManager).emit(SocketEvent.UPDATE_TOURNAMENTS, {
+    tournaments: Array.from(activeTournaments),
+    activePlayers: Array.from(activePlayers),
+    allPlayers: Array.from(allPlayers),
+    games: Array.from(activeGames),
+  });
 };

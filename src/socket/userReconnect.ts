@@ -47,7 +47,7 @@ export const userReconnect = (
         : PlayerStatus.NOT_STARTED,
       isAdmin: existingUser.isAdmin,
       isDeleted: false,
-      playersPlayed: existingUser.playersPlayed
+      playersPlayed: existingUser.playersPlayed,
     };
 
     updatedUsers.add(newPlayer);
@@ -57,7 +57,7 @@ export const userReconnect = (
     updatedUsers.forEach((user) => activePlayers.add(user));
     updatedUsers.forEach((user) => allPlayers.add(user));
 
-    replaceTournamentPlayer(existingUser, newPlayer)
+    replaceTournamentPlayer(existingUser, newPlayer);
 
     const activeGameId = findGameByUsername(username, activeGames);
     let playerInfo = findPlayerByUsername(username, allPlayers);
@@ -95,7 +95,6 @@ export const userReconnect = (
     }
   }
 
-  
   if (tournamentId) {
     socket.join(tournamentId);
     io.to(tournamentId).emit(
@@ -104,8 +103,10 @@ export const userReconnect = (
     );
   }
 
-  io.to(adminManager).emit(
-    SocketEvent.UPDATE_TOURNAMENTS,
-    Array.from(activeTournaments)
-  );
+  io.to(adminManager).emit(SocketEvent.UPDATE_TOURNAMENTS, {
+    tournaments: Array.from(activeTournaments),
+    activePlayers: Array.from(activePlayers),
+    allPlayers: Array.from(allPlayers),
+    games: Array.from(activeGames),
+  });
 };
