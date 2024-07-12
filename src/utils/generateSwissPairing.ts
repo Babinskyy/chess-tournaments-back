@@ -1,43 +1,275 @@
-import { v4 } from "uuid";
-import { Player } from "../types/types.types";
+import { Swiss } from "../swiss/swiss";
+import { Color, Player, PlayerStatus } from "../types/types";
 
-export const generateSwissPairings = () => {
-  const playersArr = [
-    {
-      id: "username1", 
-      score: 0, 
-      pairedUpDown: false, 
-      receivedBye: false, 
-      avoid: [], 
-      colors: [], 
-    },
-    {
-      id: "username2",
-      score: 0, 
-      pairedUpDown: false, 
-      receivedBye: false,
-      avoid: [], 
-      colors: [], 
-    },
-    {
-      id: "username3",
-      score: 0,
-      pairedUpDown: false, 
-      receivedBye: false, 
-      avoid: [],
-      colors: [],
-    },
-    {
-      id: "username4", 
-      score: 0, 
-      pairedUpDown: false, 
-      receivedBye: false, 
-      avoid: [], 
-      colors: [], 
-    },
-  ];
+export const generateSwissPairings = (playersArr: Player[], round: number) => {
+  const playersToBePaired = playersArr.map((player, index) => ({
+    id: player.username,
+    score: player.points,
+    avoid: player.playersPlayed,
+    index: index,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: player.colors,
+  }));
 
-  // const pairings = Swiss(playersArr, 1, false, true);
-
-  // console.log(pairings);
+  return Swiss(playersToBePaired, round, true);
 };
+
+const players: Player[] = [
+  {
+    id: "1",
+    username: "Player1",
+    points: 10,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player2", "Player3", "Player4"],
+    colors: [
+      Color.WHITE,
+      Color.BLACK,
+      Color.BLACK,
+      Color.WHITE,
+      Color.BLACK,
+      Color.BLACK,
+    ],
+  },
+  {
+    id: "2",
+    username: "Player2",
+    points: 8,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player1", "Player3"],
+    colors: [Color.BLACK, Color.WHITE, Color.WHITE],
+  },
+  {
+    id: "3",
+    username: "Player3",
+    points: 7,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player1", "Player2", "Player5"],
+    colors: [Color.WHITE, Color.BLACK],
+  },
+  {
+    id: "4",
+    username: "Player4",
+    points: 5,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: true,
+    isDeleted: false,
+    playersPlayed: ["Player1"],
+    colors: [Color.BLACK, Color.WHITE, Color.WHITE, Color.BLACK],
+  },
+  {
+    id: "5",
+    username: "Player5",
+    points: 6,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player3", "Player6"],
+    colors: [Color.WHITE, Color.BLACK, Color.BLACK, Color.BLACK],
+  },
+  {
+    id: "6",
+    username: "Player6",
+    points: 9,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: true,
+    playersPlayed: ["Player5", "Player7"],
+    colors: [Color.BLACK, Color.BLACK],
+  },
+  {
+    id: "7",
+    username: "Player7",
+    points: 3,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player6", "Player8"],
+    colors: [Color.WHITE, Color.WHITE, Color.WHITE, Color.BLACK],
+  },
+  {
+    id: "8",
+    username: "Player8",
+    points: 4,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player7", "Player9"],
+    colors: [Color.BLACK, Color.WHITE],
+  },
+  {
+    id: "9",
+    username: "Player9",
+    points: 2,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player8", "Player10", "player11"],
+    colors: [Color.WHITE, Color.WHITE, Color.BLACK, Color.BLACK, Color.WHITE],
+  },
+  {
+    id: "10",
+    username: "Player10",
+    points: 1,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player9"],
+    colors: [Color.BLACK, Color.BLACK, Color.WHITE],
+  },
+  {
+    id: "11",
+    username: "Player11",
+    points: 1,
+    status: PlayerStatus.NOT_STARTED,
+    isAdmin: false,
+    isDeleted: false,
+    playersPlayed: ["Player9"],
+    colors: [Color.BLACK],
+  },
+];
+
+const playerArray = [
+  {
+    id: "player2",
+    score: 0,
+    avoid: [],
+    index: 0,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [],
+  },
+  {
+    id: "player1",
+    score: 0,
+    avoid: [],
+    index: 1,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [],
+  },
+];
+const playerArr0 = [
+  {
+    id: "player1",
+    score: 0,
+    avoid: [],
+    index: 0,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [],
+  },
+  {
+    id: "player2",
+    score: 0,
+    avoid: [],
+    index: 1,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [],
+  },
+  {
+    id: "player3",
+    score: 0,
+    avoid: [],
+    index: 2,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [],
+  },
+  {
+    id: "player4",
+    score: 0,
+    avoid: [],
+    index: 3,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [],
+  },
+];
+
+const playerArr1 = [
+  {
+    id: "player1",
+    score: 1,
+    avoid: ["player4"],
+    index: 0,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.WHITE],
+  },
+  {
+    id: "player2",
+    score: 0,
+    avoid: ["player3"],
+    index: 1,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.WHITE],
+  },
+  {
+    id: "player3",
+    score: 1,
+    avoid: ["player2"],
+    index: 2,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.BLACK],
+  },
+  {
+    id: "player4",
+    score: 0,
+    avoid: ["player1"],
+    index: 3,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.BLACK],
+  },
+];
+
+const playerArr2 = [
+  {
+    id: "player1",
+    score: 2,
+    avoid: ["player4", "player3"],
+    index: 0,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.BLACK, Color.BLACK],
+  },
+  {
+    id: "player2",
+    score: 1,
+    avoid: ["player3", "player4"],
+    index: 1,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.WHITE, Color.BLACK],
+  },
+  {
+    id: "player3",
+    score: 1,
+    avoid: ["player2", "player1"],
+    index: 2,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.BLACK, Color.WHITE],
+  },
+  {
+    id: "player4",
+    score: 0,
+    avoid: ["player1", "player2"],
+    index: 3,
+    pairedUpDown: false,
+    receivedBye: false,
+    colors: [Color.WHITE, Color.WHITE],
+  },
+];
+
+// console.log(Swiss(playerArr2, 3, false, true));

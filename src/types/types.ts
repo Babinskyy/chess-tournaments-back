@@ -35,6 +35,10 @@ export enum SocketEvent {
   GET_TOURNAMENTS = "get-tournaments",
   FINISH_TOURNAMENT = "finish-tournament",
   CHECK_IS_PLAYER_IN_TOURNAMENT = "check-is-player-in-tournament",
+  UPDATE_CLOCK = "update-clock",
+  START_ROUND = "start-round",
+  UPDATE_ONE_TOURNAMENT = "update-one-tournament",
+  UPDATE_COUNTDOWN = "update-countdown",
 }
 
 export enum PlayerStatus {
@@ -52,7 +56,8 @@ export type Player = {
   status: PlayerStatus;
   isAdmin: boolean;
   isDeleted: boolean;
-  playersPlayed: string[]
+  playersPlayed: string[];
+  colors: Array<Color>;
 };
 
 export type Tournament = {
@@ -60,7 +65,7 @@ export type Tournament = {
   name: string;
   players: Player[];
   active: boolean;
-  type: TournamentTypes;
+  type: TournamentType;
   time: number;
   win: number;
   currentRound: number;
@@ -77,12 +82,12 @@ export enum TemporaryPlayer {
   ID = "00000000000000",
 }
 
-export enum Colors {
+export enum Color {
   WHITE = "white",
   BLACK = "black",
 }
 
-export enum TournamentTypes {
+export enum TournamentType {
   FFA = "ffa",
   SWISS = "swiss",
   BRACKETS = "brackets",

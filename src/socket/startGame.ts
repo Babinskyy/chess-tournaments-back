@@ -1,4 +1,5 @@
 import { io } from '../..';
+import { SocketEvent } from '../types/types';
 import { getTurnColorFromFEN } from '../utils/getTurnColorFromFEN';
 
 export const startGame = (gameId: string, activeGames: Map<any, any>) => {
@@ -19,7 +20,7 @@ export const startGame = (gameId: string, activeGames: Map<any, any>) => {
       clearInterval(interval);
     } else {
       clocks[clockIndex]--;
-      io.to(gameId).emit('update-clock', clocks);
+      io.to(gameId).emit(SocketEvent.UPDATE_CLOCK, clocks);
     }
   }, 1000);
 };

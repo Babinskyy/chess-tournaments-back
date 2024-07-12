@@ -7,7 +7,7 @@ import {
   allPlayers,
 } from "./onConnection";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
-import { PlayerStatus, SocketEvent, Player } from "../types/types.types";
+import { PlayerStatus, SocketEvent, Player, TournamentType } from "../types/types";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { updatePlayerStatus } from "../utils/updatePlayerStatus";
@@ -27,8 +27,9 @@ export const finishGame = (game: string, result: string, reason: string) => {
 
     const player1 = findPlayerByUsername(player1Username, allPlayers);
     const player2 = findPlayerByUsername(player2Username, allPlayers);
+    const tournamentType = findTournamentByUsername(player1Username)?.type
 
-    if (result) {
+    if (result || tournamentType === TournamentType.SWISS) {
       if (player1 && player2) {
         if (!player1.playersPlayed.includes(player2.username)) {
           player1.playersPlayed.push(player2.username);

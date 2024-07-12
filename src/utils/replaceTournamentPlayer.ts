@@ -1,5 +1,5 @@
 import { activeTournaments } from "../socket/onConnection"
-import { Player } from "../types/types.types"
+import { Player } from "../types/types"
 
 export const replaceTournamentPlayer = (player: Player, newPlayer: Player) => {
     activeTournaments.forEach((tournament) => {

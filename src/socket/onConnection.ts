@@ -7,14 +7,15 @@ import { startGame } from "./startGame";
 import { addPoints } from "./addPoints";
 import { finishGame } from "./finishGame";
 import {
-  Colors,
+  Color,
   Game,
   PlayerStatus,
   TemporaryPlayer,
   Tournament,
   Player,
-  TournamentTypes,
-} from "../types/types.types";
+  TournamentType,
+  SocketEvent,
+} from "../types/types";
 import { startCountdown } from "./startCountdown";
 import {
   INITIAL_FEN,
@@ -24,7 +25,6 @@ import { findGameByUsername } from "../utils/findGameByUsername";
 import { findGameBySpectator } from "../utils/findGameBySpectator";
 import { getUserBySocket } from "../utils/getUserBySocket";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
-import { SocketEvent } from "../types/types.types";
 import { startStatusChecking } from "./startStatusChecking";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
@@ -33,6 +33,8 @@ import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament"
 import { updatePlayerStatus } from "../utils/updatePlayerStatus";
 import { deletePlayer } from "../utils/deleteUser";
 import { generateSwissPairings } from "../utils/generateSwissPairing";
+import { updatePlayerColor } from "../utils/updatePlayerColor";
+import { Match } from "../swiss/swiss.types";
 
 export const activeTournaments: Set<Tournament> = new Set();
 export const activePlayers: Set<Player> = new Set();
@@ -120,6 +122,7 @@ export const onConnection = (
           isAdmin: isAdmin,
           isDeleted: false,
           playersPlayed: [],
+          colors: [],
         };
 
         if (tournament) {
@@ -153,21 +156,7 @@ export const onConnection = (
     (tournamentId: string, callback: Function) => {
       const tournament = findTournamentByTournamentId(tournamentId);
       if (tournament) {
-        if (tournament.active) {
-          callback({
-            isActive: true,
-            tournamentName: tournament.name,
-            tournamentType: tournament.type,
-            timeControl: tournament.time,
-          });
-        } else {
-          callback({
-            isActive: false,
-            tournamentName: tournament.name,
-            tournamentType: tournament.type,
-            timeControl: tournament.time,
-          });
-        }
+        callback(tournament);
       }
 
       io.to(tournamentId).emit(
@@ -189,7 +178,7 @@ export const onConnection = (
       room,
     }: {
       username: string;
-      playerColor: Colors;
+      playerColor: Color;
       room: string;
     }): void => {
       const existingUser = Array.from(activePlayers).find(
@@ -205,7 +194,7 @@ export const onConnection = (
 
         if (finishedGame) {
           const winner =
-            playerColor === Colors.BLACK
+            playerColor === Color.BLACK
               ? finishedGame.playersUsernames[0]
               : finishedGame.playersUsernames[1];
 
@@ -219,6 +208,8 @@ export const onConnection = (
           );
 
           if (player0 && player1) {
+            updatePlayerColor(player0, Color.WHITE);
+            updatePlayerColor(player1, Color.BLACK);
             updatePlayerStatus(player0, PlayerStatus.NOT_STARTED);
             updatePlayerStatus(player1, PlayerStatus.NOT_STARTED);
           }
@@ -227,7 +218,7 @@ export const onConnection = (
           socket.leave(room);
 
           const result =
-            playerColor === Colors.WHITE ? Colors.BLACK : Colors.WHITE;
+            playerColor === Color.WHITE ? Color.BLACK : Color.WHITE;
 
           finishGame(room, result, "opponent disconnect");
           activeGames.delete(room);
@@ -326,6 +317,7 @@ export const onConnection = (
         isAdmin: false,
         isDeleted: false,
         playersPlayed: existingUser.playersPlayed,
+        colors: existingUser.colors,
       });
 
       updatePlayerStatus(existingUser, PlayerStatus.DISCONNECTED);
@@ -366,7 +358,7 @@ export const onConnection = (
     const tournament1 = findTournamentByUsername(player);
     const playerObj = findPlayerByUsername(player, allPlayers);
 
-    if (tournament1?.type === TournamentTypes.FFA && playerObj) {
+    if (tournament1?.type === TournamentType.FFA && playerObj) {
       const allPlayersInTournament = getPlayersFromTournamentById(
         tournament1.id
       ).filter(
@@ -475,13 +467,19 @@ export const onConnection = (
     const finishedGame = activeGames.get(room);
 
     if (finishedGame) {
+      const tournamentType = findTournamentByUsername(
+        finishedGame?.playersUsernames[0]
+      )?.type;
+
       const winner =
         result === "white"
           ? finishedGame.playersUsernames[0]
           : result === "black"
           ? finishedGame.playersUsernames[1]
           : result === ""
-          ? ""
+          ? tournamentType === TournamentType.SWISS
+            ? finishedGame.playersUsernames[1]
+            : ""
           : "draw";
 
       const player0 = findPlayerByUsername(
@@ -494,8 +492,10 @@ export const onConnection = (
       );
 
       if (player0 && player1) {
-        updatePlayerStatus(player0, PlayerStatus.IN_GAME);
-        updatePlayerStatus(player1, PlayerStatus.IN_GAME);
+        updatePlayerColor(player0, Color.WHITE);
+        updatePlayerColor(player1, Color.BLACK);
+        updatePlayerStatus(player0, PlayerStatus.NOT_STARTED);
+        updatePlayerStatus(player1, PlayerStatus.NOT_STARTED);
       }
 
       addPoints(winner, room, activeGames);
@@ -525,7 +525,7 @@ export const onConnection = (
         id: string;
         username: string;
         time: string;
-        type: TournamentTypes;
+        type: TournamentType;
         win: string;
       },
       callback: Function
@@ -731,9 +731,9 @@ export const onConnection = (
   socket.on(
     SocketEvent.GET_TOURNAMENT_INFO,
     (playerUsername: string, callback: Function) => {
-      const tournamentName = findTournamentByUsername(playerUsername)?.name;
-      if (tournamentName) {
-        callback(tournamentName);
+      const tournament = findTournamentByUsername(playerUsername);
+      if (tournament) {
+        callback(tournament);
       }
     }
   );
@@ -866,4 +866,72 @@ export const onConnection = (
       }
     }
   );
+
+  socket.on(SocketEvent.START_ROUND, (tournamentId: string) => {
+    activeTournaments.forEach((t) => {
+      if (t.id === tournamentId) {
+        t.currentRound = t.currentRound + 1;
+      }
+    });
+
+    const tournament = findTournamentByTournamentId(tournamentId);
+    let pairings: Match[] | null = null;
+    const tournamentPlayers = tournament?.players;
+
+    if (tournamentPlayers) {
+      pairings = generateSwissPairings(
+        tournamentPlayers,
+        tournament?.currentRound
+      );
+    }
+
+    pairings?.forEach((pairing) => {
+      const gameId = v4();
+
+      if (
+        typeof pairing.player1 === "string" &&
+        typeof pairing.player2 === "string" &&
+        tournament
+      ) {
+        activeGames.set(gameId, {
+          fen: INITIAL_FEN,
+          playersUsernames: [pairing.player1, pairing.player2],
+          clocks: [tournament.time * 60, tournament.time * 60],
+          spectators: [],
+        });
+
+        const player0 = findPlayerByUsername(pairing.player1, activePlayers);
+        const player1 = findPlayerByUsername(pairing.player2, activePlayers);
+
+        if (player0 && player1) {
+          const socket0 = io.sockets.sockets.get(player0?.id);
+          const socket1 = io.sockets.sockets.get(player1?.id);
+
+          socket0?.join(gameId);
+          socket1?.join(gameId);
+
+          io.to(player0?.id).to(player1?.id).emit(SocketEvent.SET_GAME, gameId);
+
+          updatePlayerStatus(player0, PlayerStatus.IN_GAME);
+          updatePlayerStatus(player1, PlayerStatus.IN_GAME);
+
+          startCountdown(gameId, activeGames);
+
+          const tournamentId = findTournamentByUsername(player0.username)?.id;
+          if (tournamentId) {
+            io.to(tournamentId).emit(
+              SocketEvent.USERS_LIST_UPDATE,
+              getPlayersFromTournamentById(tournamentId)
+            );
+            io.to(gameId!).emit(SocketEvent.PLAYER_JOIN, [
+              pairing.player1,
+              pairing.player2,
+            ]);
+          }
+        }
+      }
+    });
+
+    socket.to(tournamentId).emit(SocketEvent.UPDATE_ONE_TOURNAMENT, tournament);
+  });
 };

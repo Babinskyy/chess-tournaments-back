@@ -1,5 +1,5 @@
 import { activeTournaments, activePlayers } from "../socket/onConnection";
-import { TemporaryPlayer, Player } from "../types/types.types";
+import { TemporaryPlayer, Player } from "../types/types";
 import { getUsernamesFromTournament } from "./getUsernamesFromTournament";
 import { getUsersArray } from "./getUsersArray";
 

@@ -1,5 +1,5 @@
 import { activeTournaments } from "../socket/onConnection";
-import { Tournament } from "../types/types.types";
+import { Tournament } from "../types/types";
 import { getUsernamesFromTournament } from "./getUsernamesFromTournament";
 
 export const findTournamentByUsername = (

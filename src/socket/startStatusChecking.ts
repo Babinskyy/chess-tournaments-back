@@ -1,5 +1,5 @@
 import { io } from "../..";
-import { PlayerStatus, SocketEvent } from "../types/types.types";
+import { Color, PlayerStatus, SocketEvent } from "../types/types";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
@@ -16,6 +16,7 @@ import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
 import { deletePlayer } from "../utils/deleteUser";
+import { updatePlayerColor } from "../utils/updatePlayerColor";
 
 const USER_DELETION_TIME = 30000;
 
@@ -32,12 +33,14 @@ export const startStatusChecking = (playerUsername: string) => {
       if (!player || player?.status !== PlayerStatus.DISCONNECTED) {
         return;
       }
+
       if (player?.status === PlayerStatus.DISCONNECTED) {
         activePlayers.forEach((user) => {
           if (player === user) {
             deletePlayer(user);
           }
         });
+
         allPlayers.forEach((user) => {
           if (player === user) {
             user.isDeleted = true;
@@ -47,6 +50,7 @@ export const startStatusChecking = (playerUsername: string) => {
         if (temporaryPlayer) {
           allPlayers.delete(temporaryPlayer);
         }
+
         if (game) {
           const isPlayerWhite =
             playerUsername === activeGames.get(game)?.playersUsernames[0];
@@ -57,6 +61,14 @@ export const startStatusChecking = (playerUsername: string) => {
             const winner = isPlayerWhite
               ? finishedGame.playersUsernames[1]
               : finishedGame.playersUsernames[0];
+
+            const opponent = findPlayerByUsername(winner, activePlayers);
+            if (opponent) {
+              updatePlayerColor(
+                opponent,
+                isPlayerWhite ? Color.BLACK : Color.WHITE
+              );
+            }
 
             addPoints(winner, game, activeGames);
           }

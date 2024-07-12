@@ -11,7 +11,7 @@ import {
   disconnectTimeouts,
 } from "./onConnection";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
-import { PlayerStatus, SocketEvent, Player } from "../types/types.types";
+import { PlayerStatus, SocketEvent, Player } from "../types/types";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { io } from "../..";
@@ -48,6 +48,7 @@ export const userReconnect = (
       isAdmin: existingUser.isAdmin,
       isDeleted: false,
       playersPlayed: existingUser.playersPlayed,
+      colors: existingUser.colors
     };
 
     updatedUsers.add(newPlayer);

@@ -1,5 +1,5 @@
 import { activeTournaments } from "../socket/onConnection";
-import { Tournament } from "../types/types.types";
+import { Tournament } from "../types/types";
 
 export const findTournamentByTournamentId = (
   tournamentId: string

@@ -1,7 +1,6 @@
-import { io } from '../..';
-import { INITIAL_SECONDS_TO_START } from '../constansts/constants';
-
-
+import { io } from "../..";
+import { INITIAL_SECONDS_TO_START } from "../constansts/constants";
+import { SocketEvent } from "../types/types";
 
 export const startCountdown = (gameId: string, activeGames: Map<any, any>) => {
   let seconds = INITIAL_SECONDS_TO_START;
@@ -18,7 +17,7 @@ export const startCountdown = (gameId: string, activeGames: Map<any, any>) => {
       clearInterval(interval);
     } else {
       seconds--;
-      io.to(gameId).emit('update-countdown', seconds);
+      io.to(gameId).emit(SocketEvent.UPDATE_COUNTDOWN, seconds);
     }
   }, 1000);
 };

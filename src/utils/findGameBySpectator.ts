@@ -1,4 +1,4 @@
-import { Game } from "../types/types.types";
+import { Game } from "../types/types";
 
 export const findGameBySpectator = (
   username: string,

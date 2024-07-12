@@ -1,5 +1,5 @@
 import { activePlayers, activeTournaments } from "../socket/onConnection";
-import { Player } from "../types/types.types";
+import { Player } from "../types/types";
 import { findTournamentByUsername } from "./findTournamentByUsername";
 
 export const deletePlayer = (player: Player) => {

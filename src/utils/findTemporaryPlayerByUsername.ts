@@ -1,4 +1,4 @@
-import { TemporaryPlayer, Player } from "../types/types.types";
+import { TemporaryPlayer, Player } from "../types/types";
 
 export const findTemporaryPlayerByUsername = (
   username: string,

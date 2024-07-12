@@ -1,4 +1,4 @@
-import { Player } from "../types/types.types";
+import { Player } from "../types/types";
 
 export const getUserBySocket = (
   socketId: string,
