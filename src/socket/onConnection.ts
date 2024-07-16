@@ -41,7 +41,6 @@ export const activePlayers: Set<Player> = new Set();
 export const allPlayers: Set<Player> = new Set();
 export const userSockets = new Map();
 export const activeGames: Map<string, Game> = new Map();
-export const finishedGames: Map<string, Game> = new Map();
 export const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 export let adminManager: string = "";
 
@@ -130,6 +129,7 @@ export const onConnection = (
         }
 
         activePlayers.add(newPlayer);
+
         socket.join(tournamentId);
         userSockets.set(newPlayerId, socket);
 
@@ -555,6 +555,7 @@ export const onConnection = (
           win: Number(win),
           currentRound: 0,
         });
+
         callback({ username: false, tournamentName: false });
       }
 
@@ -571,6 +572,7 @@ export const onConnection = (
     SocketEvent.ENTER_TOURNAMENT,
     (tournamentId: string, callback: Function) => {
       const tournament = findTournamentByTournamentId(tournamentId);
+
       socket.join(tournamentId!);
 
       if (tournament) {
@@ -619,8 +621,8 @@ export const onConnection = (
         if (activeGames.has(game)) {
           activeGame = activeGames.get(game)!;
           activeGame?.spectators.push(selectingPlayer);
-          socket.emit(SocketEvent.SET_GAME, game);
           socket.join(game);
+          socket.emit(SocketEvent.SET_GAME, game);
           const { fen, clocks } = activeGame;
           socket.emit(SocketEvent.RECOVER_GAME, {
             fen,
@@ -642,13 +644,16 @@ export const onConnection = (
       }
 
       const tournamentId = findTournamentByUsername(selectingPlayer)?.id;
+
       if (tournamentId) {
         io.to(tournamentId).emit(
           SocketEvent.USERS_LIST_UPDATE,
           getPlayersFromTournamentById(tournamentId)
         );
       }
+
       callback(activeGame?.playersUsernames);
+
       io.to(adminManager).emit(SocketEvent.UPDATE_TOURNAMENTS, {
         tournaments: Array.from(activeTournaments),
         activePlayers: Array.from(activePlayers),
@@ -932,6 +937,13 @@ export const onConnection = (
       }
     });
 
-    socket.to(tournamentId).emit(SocketEvent.UPDATE_ONE_TOURNAMENT, tournament);
+    io.to(adminManager).emit(SocketEvent.UPDATE_TOURNAMENTS, {
+      tournaments: Array.from(activeTournaments),
+      activePlayers: Array.from(activePlayers),
+      allPlayers: Array.from(allPlayers),
+      games: Array.from(activeGames),
+    });
+
+    io.to(tournamentId).emit(SocketEvent.UPDATE_ONE_TOURNAMENT, tournament);
   });
 };
