@@ -343,11 +343,24 @@ export const onConnection = (
     });
   });
 
-  socket.on(SocketEvent.MOVE, (move, game) => {
+  socket.on(SocketEvent.MOVE, (move, gameId) => {
+    const game = activeGames.get(gameId);
+    if (game?.playersUsernames[0]) {
+      const tournament = findTournamentByUsername(game?.playersUsernames[0]);
+      if (tournament?.increment) {
+        if (game.isWhiteMove) {
+          game.clocks[0] = game.clocks[0] + tournament?.increment;
+        } else {
+          game.clocks[1] = game.clocks[1] + tournament?.increment;
+        }
+        game.isWhiteMove = !game.isWhiteMove;
+      }
+    }
+
     if (!game) {
       socket.broadcast.emit(SocketEvent.PLAYER_MOVE, move);
     } else {
-      socket.to(game).emit(SocketEvent.PLAYER_MOVE, move);
+      socket.to(gameId).emit(SocketEvent.PLAYER_MOVE, move);
     }
   });
 
@@ -403,6 +416,7 @@ export const onConnection = (
           fen: INITIAL_FEN,
           playersUsernames: playersUsernames,
           clocks: [tournament1.time * 60, tournament1.time * 60],
+          isWhiteMove: true,
           spectators: [],
         });
 
@@ -518,6 +532,7 @@ export const onConnection = (
         id,
         username,
         time,
+        increment,
         type,
         win,
       }: {
@@ -525,6 +540,7 @@ export const onConnection = (
         id: string;
         username: string;
         time: string;
+        increment: string;
         type: TournamentType;
         win: string;
       },
@@ -552,6 +568,7 @@ export const onConnection = (
           active: false,
           type: type,
           time: Number(time),
+          increment: Number(increment),
           win: Number(win),
           currentRound: 0,
         });
@@ -902,6 +919,7 @@ export const onConnection = (
           fen: INITIAL_FEN,
           playersUsernames: [pairing.player1, pairing.player2],
           clocks: [tournament.time * 60, tournament.time * 60],
+          isWhiteMove: true,
           spectators: [],
         });
 

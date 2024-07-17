@@ -67,6 +67,7 @@ export type Tournament = {
   active: boolean;
   type: TournamentType;
   time: number;
+  increment: number;
   win: number;
   currentRound: number;
 };
@@ -75,6 +76,7 @@ export type Game = {
   fen: string;
   playersUsernames: string[];
   clocks: [number, number];
+  isWhiteMove: boolean;
   spectators: string[];
 };
 
