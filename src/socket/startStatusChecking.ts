@@ -1,5 +1,10 @@
 import { io } from "../..";
-import { Color, PlayerStatus, SocketEvent } from "../types/types";
+import {
+  Color,
+  GameFinishReason,
+  PlayerStatus,
+  SocketEvent,
+} from "../types/types";
 import { findGameByUsername } from "../utils/findGameByUsername";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
@@ -75,7 +80,7 @@ export const startStatusChecking = (playerUsername: string) => {
           finishGame(
             game,
             !isPlayerWhite ? "white" : "black",
-            "opponent disconnect"
+            GameFinishReason.opponentDisconnect
           );
         }
 

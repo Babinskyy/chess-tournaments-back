@@ -5,8 +5,6 @@ import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import {
   activeGames,
   activePlayers,
-  activeTournaments,
-  adminManager,
   allPlayers,
   disconnectTimeouts,
 } from "./onConnection";
@@ -17,6 +15,7 @@ import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentB
 import { io } from "../..";
 import { updatePlayerStatus } from "../utils/updatePlayerStatus";
 import { replaceTournamentPlayer } from "../utils/replaceTournamentPlayer";
+import { updateAdminManager } from "../functions/updateAdminManager";
 
 export const userReconnect = (
   username: string,
@@ -48,7 +47,7 @@ export const userReconnect = (
       isAdmin: existingUser.isAdmin,
       isDeleted: false,
       playersPlayed: existingUser.playersPlayed,
-      colors: existingUser.colors
+      colors: existingUser.colors,
     };
 
     updatedUsers.add(newPlayer);
@@ -104,10 +103,5 @@ export const userReconnect = (
     );
   }
 
-  io.to(adminManager).emit(SocketEvent.UPDATE_TOURNAMENTS, {
-    tournaments: Array.from(activeTournaments),
-    activePlayers: Array.from(activePlayers),
-    allPlayers: Array.from(allPlayers),
-    games: Array.from(activeGames),
-  });
+  updateAdminManager();
 };

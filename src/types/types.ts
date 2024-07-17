@@ -94,3 +94,20 @@ export enum TournamentType {
   SWISS = "swiss",
   BRACKETS = "brackets",
 }
+
+export type moveData = {
+  from: string;
+  to: string;
+  promotion: string;
+};
+
+export enum GameFinishReason {
+  time = "opponent time",
+  checkmate = "checkmate",
+  surrender = "opponent surrender",
+  threefold = "threefold repetition",
+  stalemate = "stalemate",
+  material = "insufficient material",
+  tournamentFinish = "finish-tournament",
+  opponentDisconnect = "opponent disconnect",
+}
