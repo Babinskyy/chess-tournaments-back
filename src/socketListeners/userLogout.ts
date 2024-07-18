@@ -63,7 +63,7 @@ export const userLogout = (
         updatePlayerStatus(player1, PlayerStatus.NOT_STARTED);
       }
 
-      addPoints(winner, room, activeGames);
+      addPoints(winner, room);
       socket.leave(room);
 
       const result = playerColor === Color.WHITE ? Color.BLACK : Color.WHITE;

@@ -1,11 +1,5 @@
 import { io } from "../..";
-import {
-  activeGames,
-  activePlayers,
-  activeTournaments,
-  adminManager,
-  allPlayers,
-} from "./onConnection";
+import { activeGames, allPlayers } from "./onConnection";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import {
   PlayerStatus,

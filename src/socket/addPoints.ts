@@ -9,17 +9,14 @@ import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
 import {
+  activeGames,
   activePlayers,
   activeTournaments,
   allPlayers,
   userSockets,
 } from "./onConnection";
 
-export const addPoints = (
-  winner: string,
-  game: string,
-  activeGames: Map<string, Game>
-) => {
+export const addPoints = (winner: string, game: string) => {
   if (winner) {
     if (winner !== "draw") {
       activePlayers.forEach((user) => {

@@ -21,6 +21,8 @@ import { leaveTournament } from "./leaveTournament";
 import { checkTournament } from "./checkTournament";
 import { checkIsPlayerInTournament } from "./checkIsPlayerInTournament";
 import { startRound } from "./startRound";
+import { drawOffer } from "./drawOffer";
+import { declineDraw } from "./declineDraw";
 
 const functions = {
   userLogin,
@@ -44,6 +46,8 @@ const functions = {
   checkTournament,
   checkIsPlayerInTournament,
   startRound,
+  drawOffer,
+  declineDraw
 };
 
 export default functions;

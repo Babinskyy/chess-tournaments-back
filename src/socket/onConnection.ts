@@ -37,6 +37,8 @@ const {
   checkTournament,
   checkIsPlayerInTournament,
   startRound,
+  drawOffer,
+  declineDraw,
 } = functions;
 
 export const activeTournaments: Set<Tournament> = new Set();
@@ -257,5 +259,16 @@ export const onConnection = (
 
   socket.on(SocketEvent.START_ROUND, (tournamentId: string) => {
     startRound(tournamentId);
+  });
+
+  socket.on(
+    SocketEvent.DRAW_OFFER,
+    ({ playerUsername, room }: { playerUsername: string; room: string }) => {
+      drawOffer(playerUsername, room);
+    }
+  );
+
+  socket.on(SocketEvent.DECLINE_DRAW, (room: string) => {
+    declineDraw(room);
   });
 };

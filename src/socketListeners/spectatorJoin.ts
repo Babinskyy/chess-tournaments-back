@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 import { activeGames, activePlayers } from "../socket/onConnection";
-import { findGameByUsername } from "../utils/findGameByUsername";
+import { findGameIdByUsername } from "../utils/findGameIdByUsername";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 import { PlayerStatus, SocketEvent } from "../types/types";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
@@ -16,7 +16,7 @@ export const spectatorJoin = (
   callback: Function,
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
-  const game = findGameByUsername(selectedPlayer, activeGames);
+  const game = findGameIdByUsername(selectedPlayer, activeGames);
 
   let activeGame;
 

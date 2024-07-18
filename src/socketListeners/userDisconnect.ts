@@ -6,7 +6,7 @@ import { findGameBySpectator } from "../utils/findGameBySpectator";
 import { updatePlayerStatus } from "../utils/updatePlayerStatus";
 import { PlayerStatus, SocketEvent, TemporaryPlayer } from "../types/types";
 import { getUserBySocket } from "../utils/getUserBySocket";
-import { findGameByUsername } from "../utils/findGameByUsername";
+import { findGameIdByUsername } from "../utils/findGameIdByUsername";
 import { startStatusChecking } from "../socket/startStatusChecking";
 import { io } from "../..";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
@@ -45,7 +45,7 @@ export const userDisconnect = (
     }
 
     if (existingUser.status === PlayerStatus.WAITING) {
-      const game = findGameByUsername(existingUser.username, activeGames);
+      const game = findGameIdByUsername(existingUser.username, activeGames);
       if (game) {
         activeGames.delete(game);
         const player = getUserBySocket(socket.id, activePlayers);

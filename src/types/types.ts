@@ -39,6 +39,11 @@ export enum SocketEvent {
   START_ROUND = "start-round",
   UPDATE_ONE_TOURNAMENT = "update-one-tournament",
   UPDATE_COUNTDOWN = "update-countdown",
+  DRAW_OFFER = "draw-offer",
+  OFFER_DRAW = "offer-draw",
+  DECLINE_DRAW = "decline-draw",
+  ACCEPT_DRAW = "accept-draw",
+  DRAW_DECLINED = "draw-declined",
 }
 
 export enum PlayerStatus {
@@ -108,6 +113,7 @@ export enum GameFinishReason {
   threefold = "threefold repetition",
   stalemate = "stalemate",
   material = "insufficient material",
-  tournamentFinish = "finish-tournament",
+  tournamentFinish = "finish tournament",
   opponentDisconnect = "opponent disconnect",
+  drawAgreement = "players agreement",
 }

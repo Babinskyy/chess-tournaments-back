@@ -5,7 +5,7 @@ import {
   PlayerStatus,
   SocketEvent,
 } from "../types/types";
-import { findGameByUsername } from "../utils/findGameByUsername";
+import { findGameIdByUsername } from "../utils/findGameIdByUsername";
 import { findTemporaryPlayerByUsername } from "../utils/findTemporaryPlayerByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import { finishGame } from "./finishGame";
@@ -33,7 +33,7 @@ export const startStatusChecking = (playerUsername: string) => {
         playerUsername,
         allPlayers
       );
-      const game = findGameByUsername(playerUsername, activeGames);
+      const game = findGameIdByUsername(playerUsername, activeGames);
 
       if (!player || player?.status !== PlayerStatus.DISCONNECTED) {
         return;
@@ -75,7 +75,7 @@ export const startStatusChecking = (playerUsername: string) => {
               );
             }
 
-            addPoints(winner, game, activeGames);
+            addPoints(winner, game);
           }
           finishGame(
             game,

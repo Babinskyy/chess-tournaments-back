@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
-import { findGameByUsername } from "../utils/findGameByUsername";
+import { findGameIdByUsername } from "../utils/findGameIdByUsername";
 import { findPlayerByUsername } from "../utils/findPlayerByUsername";
 import {
   activeGames,
@@ -59,7 +59,7 @@ export const userReconnect = (
 
     replaceTournamentPlayer(existingUser, newPlayer);
 
-    const activeGameId = findGameByUsername(username, activeGames);
+    const activeGameId = findGameIdByUsername(username, activeGames);
     let playerInfo = findPlayerByUsername(username, allPlayers);
 
     if (activeGameId) {
@@ -70,6 +70,7 @@ export const userReconnect = (
       );
       const fen = activeGames.get(activeGameId)?.fen;
       const clocks = activeGames.get(activeGameId)?.clocks;
+
       io.to(activeGameId).emit(SocketEvent.RECOVER_GAME, {
         fen,
         activeGameId,
