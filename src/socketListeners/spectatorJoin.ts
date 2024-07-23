@@ -26,9 +26,10 @@ export const spectatorJoin = (
       activeGame?.spectators.push(selectingPlayer);
       socket.join(game);
       socket.emit(SocketEvent.SET_GAME, game);
-      const { fen, clocks } = activeGame;
+      const { fen, clocks, history: movesHistory } = activeGame;
       socket.emit(SocketEvent.RECOVER_GAME, {
         fen,
+        movesHistory,
         activeGameId: game,
         clocks,
       });

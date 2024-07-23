@@ -49,6 +49,7 @@ export const startRound = (tournamentId: string) => {
         clocks: [tournament.time * 60, tournament.time * 60],
         isWhiteMove: true,
         spectators: [],
+        history: [],
       });
 
       const player0 = findPlayerByUsername(pairing.player1, activePlayers);

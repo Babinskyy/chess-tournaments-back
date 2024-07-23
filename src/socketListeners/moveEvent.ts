@@ -6,10 +6,15 @@ import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
 export const moveEvent = (
   move: moveData,
+  history: string[],
   gameId: string,
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) => {
   const game = activeGames.get(gameId);
+  if (game) {
+    game.history = history;
+  }
+
   if (game?.playersUsernames[0]) {
     const tournament = findTournamentByUsername(game?.playersUsernames[0]);
     if (tournament?.increment) {
@@ -21,10 +26,10 @@ export const moveEvent = (
       game.isWhiteMove = !game.isWhiteMove;
     }
   }
-
+  
   if (!game) {
-    socket.broadcast.emit(SocketEvent.PLAYER_MOVE, move);
+    socket.broadcast.emit(SocketEvent.PLAYER_MOVE, { move, history });
   } else {
-    socket.to(gameId).emit(SocketEvent.PLAYER_MOVE, move);
+    socket.to(gameId).emit(SocketEvent.PLAYER_MOVE, { move, history });
   }
 };

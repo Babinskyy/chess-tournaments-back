@@ -83,6 +83,7 @@ export type Game = {
   clocks: [number, number];
   isWhiteMove: boolean;
   spectators: string[];
+  history: string[];
 };
 
 export enum TemporaryPlayer {

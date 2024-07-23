@@ -102,9 +102,12 @@ export const onConnection = (
     userDisconnect(socket);
   });
 
-  socket.on(SocketEvent.MOVE, (move: moveData, gameId: string) => {
-    moveEvent(move, gameId, socket);
-  });
+  socket.on(
+    SocketEvent.MOVE,
+    (move: moveData, history: string[], gameId: string) => {
+      moveEvent(move, history, gameId, socket);
+    }
+  );
 
   socket.on(SocketEvent.JOIN_GAME, (player: string) => {
     joinGame(player, socket);

@@ -69,6 +69,7 @@ export const joinGame = (
         clocks: [tournament1.time * 60, tournament1.time * 60],
         isWhiteMove: true,
         spectators: [],
+        history: [],
       });
 
       const activePlayer = findPlayerByUsername(player, allPlayers);

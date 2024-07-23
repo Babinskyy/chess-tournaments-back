@@ -69,10 +69,12 @@ export const userReconnect = (
         activeGames.get(activeGameId)?.playersUsernames
       );
       const fen = activeGames.get(activeGameId)?.fen;
+      const movesHistory = activeGames.get(activeGameId)?.history;
       const clocks = activeGames.get(activeGameId)?.clocks;
 
       io.to(activeGameId).emit(SocketEvent.RECOVER_GAME, {
         fen,
+        movesHistory,
         activeGameId,
         clocks,
       });
