@@ -65,6 +65,7 @@ export const userDisconnect = (
       isDeleted: false,
       playersPlayed: existingUser.playersPlayed,
       colors: existingUser.colors,
+      receivedBye: existingUser.receivedBye
     });
 
     updatePlayerStatus(existingUser, PlayerStatus.DISCONNECTED);

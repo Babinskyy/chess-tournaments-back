@@ -48,6 +48,7 @@ export const userReconnect = (
       isDeleted: false,
       playersPlayed: existingUser.playersPlayed,
       colors: existingUser.colors,
+      receivedBye: existingUser.receivedBye,
     };
 
     updatedUsers.add(newPlayer);

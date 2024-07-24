@@ -5,6 +5,7 @@ import {
   SocketEvent,
   TournamentType,
 } from "../types/types";
+import { findGameIdByUsername } from "../utils/findGameIdByUsername";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { getUsernamesFromTournament } from "../utils/getUsernamesFromTournament";
@@ -16,22 +17,23 @@ import {
   userSockets,
 } from "./onConnection";
 
-export const addPoints = (winner: string, game: string) => {
+export const addPoints = (winner: string) => {
+  const game = findGameIdByUsername(winner, activeGames);
   if (winner) {
     if (winner !== "draw") {
-      activePlayers.forEach((user) => {
-        if (user.username === winner) {
-          user.points = user.points + 1;
+      activePlayers.forEach((player) => {
+        if (player.username === winner) {
+          player.points = player.points + 1;
         }
       });
-    } else {
+    } else if (game) {
       const playersUsername = activeGames.get(game)?.playersUsernames;
-      activePlayers.forEach((user) => {
-        if (playersUsername && user.username === playersUsername[0]) {
-          user.points = user.points + 0.5;
+      activePlayers.forEach((player) => {
+        if (playersUsername && player.username === playersUsername[0]) {
+          player.points = player.points + 0.5;
         }
-        if (playersUsername && user.username === playersUsername[1]) {
-          user.points = user.points + 0.5;
+        if (playersUsername && player.username === playersUsername[1]) {
+          player.points = player.points + 0.5;
         }
       });
     }
@@ -79,7 +81,5 @@ export const addPoints = (winner: string, game: string) => {
         }
       }
     });
-  } else {
-    return;
   }
 };

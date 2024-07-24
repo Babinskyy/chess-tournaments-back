@@ -4,6 +4,7 @@ import {
   activeGames,
   activePlayers,
   activeTournaments,
+  allPlayers,
 } from "../socket/onConnection";
 import { Match } from "../swiss/swiss.types";
 import { findTournamentByTournamentId } from "../utils/findTournamentByTournamentId";
@@ -16,6 +17,7 @@ import { startCountdown } from "../socket/startCountdown";
 import { findTournamentByUsername } from "../utils/findTournamentByUsername";
 import { getPlayersFromTournamentById } from "../utils/getPlayersFromTournamentById";
 import { updateAdminManager } from "../functions/updateAdminManager";
+import { addPoints } from "../socket/addPoints";
 
 export const startRound = (tournamentId: string) => {
   activeTournaments.forEach((t) => {
@@ -36,13 +38,24 @@ export const startRound = (tournamentId: string) => {
   }
 
   pairings?.forEach((pairing) => {
-    const gameId = v4();
+    if (pairing.player2 === null) {
+      const byePlayerUsername = pairing.player1;
+      if (byePlayerUsername && typeof byePlayerUsername === "string") {
+        const byePlayer = findPlayerByUsername(byePlayerUsername, allPlayers);
+        if (byePlayer) {
+          byePlayer.receivedBye = true;
+          addPoints(byePlayerUsername);
+          io.to(byePlayer.id).emit(SocketEvent.RECEIVED_BYE);
+        }
+      }
+    }
 
     if (
       typeof pairing.player1 === "string" &&
       typeof pairing.player2 === "string" &&
       tournament
     ) {
+      const gameId = v4();
       activeGames.set(gameId, {
         fen: INITIAL_FEN,
         playersUsernames: [pairing.player1, pairing.player2],
@@ -86,5 +99,10 @@ export const startRound = (tournamentId: string) => {
 
   updateAdminManager();
 
-  io.to(tournamentId).emit(SocketEvent.UPDATE_ONE_TOURNAMENT, tournament);
+  const newTournamentData = findTournamentByTournamentId(tournamentId);
+
+  io.to(tournamentId).emit(
+    SocketEvent.UPDATE_ONE_TOURNAMENT,
+    newTournamentData
+  );
 };

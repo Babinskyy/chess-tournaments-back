@@ -44,6 +44,7 @@ export enum SocketEvent {
   DECLINE_DRAW = "decline-draw",
   ACCEPT_DRAW = "accept-draw",
   DRAW_DECLINED = "draw-declined",
+  RECEIVED_BYE = "received-bye",
 }
 
 export enum PlayerStatus {
@@ -63,6 +64,7 @@ export type Player = {
   isDeleted: boolean;
   playersPlayed: string[];
   colors: Array<Color>;
+  receivedBye: boolean;
 };
 
 export type Tournament = {
@@ -117,4 +119,5 @@ export enum GameFinishReason {
   tournamentFinish = "finish tournament",
   opponentDisconnect = "opponent disconnect",
   drawAgreement = "players agreement",
+  firstMove = "first move",
 }

@@ -75,7 +75,7 @@ export const startStatusChecking = (playerUsername: string) => {
               );
             }
 
-            addPoints(winner, game);
+            addPoints(winner);
           }
           finishGame(
             game,

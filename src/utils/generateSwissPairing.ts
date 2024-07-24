@@ -8,7 +8,7 @@ export const generateSwissPairings = (playersArr: Player[], round: number) => {
     avoid: player.playersPlayed,
     index: index,
     pairedUpDown: false,
-    receivedBye: false,
+    receivedBye: player.receivedBye,
     colors: player.colors,
   }));
 
@@ -23,6 +23,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player2", "Player3", "Player4"],
     colors: [
       Color.WHITE,
@@ -40,6 +41,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player1", "Player3"],
     colors: [Color.BLACK, Color.WHITE, Color.WHITE],
   },
@@ -50,6 +52,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player1", "Player2", "Player5"],
     colors: [Color.WHITE, Color.BLACK],
   },
@@ -60,6 +63,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: true,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player1"],
     colors: [Color.BLACK, Color.WHITE, Color.WHITE, Color.BLACK],
   },
@@ -70,6 +74,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player3", "Player6"],
     colors: [Color.WHITE, Color.BLACK, Color.BLACK, Color.BLACK],
   },
@@ -80,6 +85,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: true,
+    receivedBye: false,
     playersPlayed: ["Player5", "Player7"],
     colors: [Color.BLACK, Color.BLACK],
   },
@@ -90,6 +96,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player6", "Player8"],
     colors: [Color.WHITE, Color.WHITE, Color.WHITE, Color.BLACK],
   },
@@ -100,6 +107,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player7", "Player9"],
     colors: [Color.BLACK, Color.WHITE],
   },
@@ -110,6 +118,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player8", "Player10", "player11"],
     colors: [Color.WHITE, Color.WHITE, Color.BLACK, Color.BLACK, Color.WHITE],
   },
@@ -120,6 +129,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player9"],
     colors: [Color.BLACK, Color.BLACK, Color.WHITE],
   },
@@ -130,6 +140,7 @@ const players: Player[] = [
     status: PlayerStatus.NOT_STARTED,
     isAdmin: false,
     isDeleted: false,
+    receivedBye: false,
     playersPlayed: ["Player9"],
     colors: [Color.BLACK],
   },
@@ -188,6 +199,15 @@ const playerArr0 = [
     score: 0,
     avoid: [],
     index: 3,
+    pairedUpDown: false,
+    receivedBye: true,
+    colors: [],
+  },
+  {
+    id: "player5",
+    score: 0,
+    avoid: [],
+    index: 4,
     pairedUpDown: false,
     receivedBye: false,
     colors: [],
@@ -272,4 +292,6 @@ const playerArr2 = [
   },
 ];
 
-// console.log(Swiss(playerArr2, 3, false, true));
+// console.log(Swiss(playerArr0, 3, true));
+
+// console.log(generateSwissPairings(players, 1));

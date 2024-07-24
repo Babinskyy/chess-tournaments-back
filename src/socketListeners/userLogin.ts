@@ -73,6 +73,7 @@ export const userLogin = (
       isDeleted: false,
       playersPlayed: [],
       colors: [],
+      receivedBye: false,
     };
 
     if (tournament) {
