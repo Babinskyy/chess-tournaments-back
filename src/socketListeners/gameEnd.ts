@@ -52,7 +52,7 @@ export const gameEnd = (
       updatePlayerStatus(player1, PlayerStatus.NOT_STARTED);
     }
 
-    addPoints(winner);
+    addPoints(winner, room);
     finishGame(room, result, reason);
     activeGames.delete(room);
   }

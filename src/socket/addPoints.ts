@@ -17,8 +17,7 @@ import {
   userSockets,
 } from "./onConnection";
 
-export const addPoints = (winner: string) => {
-  const game = findGameIdByUsername(winner, activeGames);
+export const addPoints = (winner: string, game?: string) => {
   if (winner) {
     if (winner !== "draw") {
       activePlayers.forEach((player) => {
